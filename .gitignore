@@ -1,0 +1,85 @@
+# ============================================
+# Datos — NO se suben (archivo de 126 MB, supera el límite de GitHub)
+# Ver "Cómo obtener el dataset" en el README
+# ============================================
+datasets/
+*.txt
+!README.md
+
+# Archivos grandes o generados
+*.zip
+*.rar
+*.7z
+*.parquet
+*.feather
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.joblib
+
+# Notebooks exportados
+.ipynb_checkpoints/
+*.html
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Testing / coverage
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# ============================================
+# Secretos y configuración local
+# ============================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+config.local.*
+secrets.*
+
+# ============================================
+# IDEs y sistema operativo
+# ============================================
+.idea/
+.vscode/
+!.vscode/settings.json
+*.swp
+*.swo
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================
+# Sistema temporal de OpenCode
+# ============================================
+.opencode/
