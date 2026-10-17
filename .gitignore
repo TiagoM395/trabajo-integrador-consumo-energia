@@ -6,6 +6,7 @@
 
 # Modelos y datos grandes (no versionar)
 datos/household_power_consumption.txt
+datasets/household_power_consumption.txt
 household_power_consumption.zip
 
 # Archivos grandes o generados
