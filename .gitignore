@@ -86,3 +86,8 @@ desktop.ini
 # Sistema temporal de OpenCode
 # ============================================
 .opencode/
+
+# ============================================
+# Lanzador local de la app (no se versiona)
+# ============================================
+levantar.bat
