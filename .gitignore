@@ -2,8 +2,6 @@
 # Datos — NO se suben (archivo de 126 MB, supera el límite de GitHub)
 # Ver "Cómo obtener el dataset" en el README
 # ============================================
-datasets/
-*.txt
 !README.md
 
 # Archivos grandes o generados
