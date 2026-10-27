@@ -1,0 +1,77 @@
+:host {
+  --ink: var(--st-text-color, #0f172a);
+  --panel: var(--st-background-color, #fff);
+  --panel-2: var(--st-secondary-background-color, #f3f5fb);
+  --line: var(--st-border-color, #e2e8f0);
+  --acc: #10b981;
+  --acc2: #3b82f6;
+  --wall-a: color-mix(in srgb, #efe7da 82%, var(--panel));
+  --wall-b: color-mix(in srgb, #e2d8c8 82%, var(--panel));
+  font-family: var(--st-font, system-ui, sans-serif);
+  color: var(--ink);
+  display: block;
+}
+.sim-escena { display: grid; gap: 10px; }
+.barra { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.barra .titulo { font-weight: 800; font-size: 1.05rem; }
+.barra .titulo small { font-weight: 600; opacity: .65; margin-left: 6px; font-size: .85rem; }
+.seg { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; color: inherit; opacity: .7; padding: .3rem .65rem; border-radius: 9px; font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
+.seg button.on { background: var(--panel); opacity: 1; box-shadow: 0 1px 6px rgba(0, 0, 0, .12); }
+.lienzo {
+  border-radius: 16px; touch-action: none; user-select: none; overflow: hidden; outline: none;
+  background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--acc2) 12%, var(--panel-2)), var(--panel-2));
+  border: 1px solid var(--line);
+}
+.lienzo:focus-visible { box-shadow: 0 0 0 3px var(--acc2); }
+.reloj { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); }
+.reloj button { width: 44px; height: 44px; border-radius: 50%; border: 0; flex: none; cursor: pointer; font-size: 1.05rem; color: #fff; background: linear-gradient(135deg, #10b981, #0ea5e9); box-shadow: 0 6px 16px -6px #10b981; }
+.reloj .c { flex: 1; min-width: 0; }
+.reloj .l { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.reloj .hora { font-size: 1.35rem; font-weight: 800; }
+.reloj .w { font-weight: 800; color: #059669; }
+.reloj input { width: 100%; accent-color: #10b981; }
+.ayuda { font-size: .78rem; opacity: .65; margin: 0; }
+
+.iso { width: 100%; height: auto; display: block; }
+.iso .pared.a { fill: var(--wall-a); }
+.iso .pared.b { fill: var(--wall-b); }
+.iso .pared-borde { fill: color-mix(in srgb, var(--wall-a) 70%, #000); }
+.iso .ventana { stroke: #fff; stroke-width: 4; stroke-linejoin: round; }
+.iso .marco { stroke: #fff; stroke-width: 2.5; fill: none; }
+.iso .sol { fill: #fde047; filter: drop-shadow(0 0 6px #fde047); }
+.iso .luna { fill: #f1f5f9; filter: drop-shadow(0 0 4px #c7d2fe); }
+.iso .puerta { fill: color-mix(in srgb, #92400e 75%, var(--wall-b)); }
+.iso .baldosa { stroke: rgba(0, 0, 0, .05); stroke-width: .5; }
+.iso .zocalo { fill: none; stroke: rgba(0, 0, 0, .15); stroke-width: 3; }
+.iso .cara { stroke: rgba(15, 23, 42, .28); stroke-width: .7; stroke-linejoin: round; }
+.iso .obj { cursor: grab; }
+.iso .obj:active { cursor: grabbing; }
+.iso .obj:hover .cara { filter: brightness(1.06); }
+.iso .huella { fill: rgba(15, 23, 42, .12); }
+.iso .huella.sel { fill: color-mix(in srgb, var(--acc2) 22%, transparent); stroke: var(--acc2); stroke-width: 2; stroke-dasharray: 6 4; animation: hormigas 1s linear infinite; }
+@keyframes hormigas { to { stroke-dashoffset: -20; } }
+.iso .obj.sel .cara { stroke: var(--acc2); stroke-width: 1.4; }
+.iso .pantalla { fill: #0b1220; }
+.iso .pantalla.on { fill: #38bdf8; filter: drop-shadow(0 0 8px #38bdf8); animation: tele 2.4s infinite alternate; }
+@keyframes tele { 0% { fill: #38bdf8; } 50% { fill: #a78bfa; } 100% { fill: #34d399; } }
+.iso .linea-det { stroke: rgba(15, 23, 42, .35); stroke-width: 1.4; fill: none; }
+.iso .manija { stroke: #94a3b8; stroke-width: 3; stroke-linecap: round; }
+.iso .puerta-det { fill: rgba(15, 23, 42, .08); stroke: rgba(15, 23, 42, .25); stroke-width: 1; }
+.iso .ojo { fill: #1e293b; stroke: #94a3b8; stroke-width: 2; }
+.iso .ojo.on { fill: #0ea5e9; animation: gira 1s linear infinite; }
+@keyframes gira { 50% { fill: #38bdf8; } }
+.iso .aura { animation: pulso 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; pointer-events: none; }
+@keyframes pulso { 50% { transform: scale(1.12); } }
+.iso .luz-halo { mix-blend-mode: screen; pointer-events: none; }
+.iso .noche-capa { fill: #0b1026; pointer-events: none; mix-blend-mode: multiply; }
+.iso .globo { cursor: pointer; }
+.iso .globo-bg { fill: var(--panel); stroke: var(--c); stroke-width: 2; filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .18)); }
+.iso .globo.sel .globo-bg { fill: var(--c); }
+.iso .globo.sel .globo-t { fill: #fff; }
+.iso .globo-t { font-size: 12px; font-weight: 800; fill: var(--ink); }
+.iso .globo-pin { stroke: var(--c); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.iso .globo-led { fill: #94a3b8; }
+.iso .globo.on .globo-led { fill: #22c55e; filter: drop-shadow(0 0 4px #22c55e); animation: led 1s infinite alternate; }
+@keyframes led { to { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; } }

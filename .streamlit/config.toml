@@ -1,0 +1,41 @@
+[server]
+# Las facturas se limitan a 10 MB
+maxUploadSize = 10
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+font = "'Plus Jakarta Sans':https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+baseRadius = "large"
+buttonRadius = "medium"
+showWidgetBorder = true
+chartCategoricalColors = ["#10b981", "#3b82f6", "#f97316", "#a855f7", "#f43f5e", "#06b6d4", "#eab308", "#64748b"]
+
+[theme.light]
+primaryColor = "#059669"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f3f5fb"
+textColor = "#0f172a"
+borderColor = "#e3e8f1"
+greenColor = "#059669"
+orangeColor = "#ea580c"
+redColor = "#e11d48"
+blueColor = "#2563eb"
+
+[theme.dark]
+primaryColor = "#10b981"
+backgroundColor = "#0a0f1e"
+secondaryBackgroundColor = "#121a2e"
+textColor = "#e6e9f2"
+borderColor = "#222d45"
+greenColor = "#34d399"
+orangeColor = "#fb923c"
+redColor = "#fb7185"
+blueColor = "#60a5fa"
+
+[theme.light.sidebar]
+backgroundColor = "#f7f8fc"
+
+[theme.dark.sidebar]
+backgroundColor = "#0d1426"

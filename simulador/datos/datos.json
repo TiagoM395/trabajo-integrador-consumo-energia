@@ -1,0 +1,1622 @@
+{
+ "ESTACIONES": {
+  "todo": [
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1,
+   1
+  ],
+  "verano": [
+   1,
+   1,
+   0.8,
+   0.2,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0.2,
+   0.6,
+   1
+  ],
+  "invierno": [
+   0,
+   0,
+   0.1,
+   0.5,
+   0.8,
+   1,
+   1,
+   0.9,
+   0.6,
+   0.2,
+   0,
+   0
+  ],
+  "heladera": [
+   1.1,
+   1.1,
+   1,
+   0.9,
+   0.9,
+   0.9,
+   0.9,
+   0.9,
+   1,
+   1,
+   1,
+   1.1
+  ]
+ },
+ "CATEGORIAS": [
+  {
+   "id": "cocina",
+   "nombre": "Cocina",
+   "icono": "🍳"
+  },
+  {
+   "id": "clima",
+   "nombre": "Climatización",
+   "icono": "🌡️"
+  },
+  {
+   "id": "agua",
+   "nombre": "Agua caliente",
+   "icono": "🚿"
+  },
+  {
+   "id": "lavado",
+   "nombre": "Lavado",
+   "icono": "🧺"
+  },
+  {
+   "id": "ocio",
+   "nombre": "Entretenimiento",
+   "icono": "🎮"
+  },
+  {
+   "id": "oficina",
+   "nombre": "Estudio y trabajo",
+   "icono": "💻"
+  },
+  {
+   "id": "luz",
+   "nombre": "Iluminación",
+   "icono": "💡"
+  },
+  {
+   "id": "otros",
+   "nombre": "Otros",
+   "icono": "🔌"
+  }
+ ],
+ "CATALOGO": [
+  {
+   "id": "heladera",
+   "nombre": "Heladera mediana",
+   "icono": "🧊",
+   "cat": "cocina",
+   "modo": "anual",
+   "kwh_anio": 320,
+   "potencia_w": 150,
+   "standby_w": 0,
+   "estacion": "heladera",
+   "rango": "25–45 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "uso": 24,
+    "inicio": 0
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 1.4,
+    "d": 1.3,
+    "h": 3.6,
+    "color": "#e9eef5",
+    "detalle": "heladera"
+   }
+  },
+  {
+   "id": "freezer",
+   "nombre": "Freezer mediano",
+   "icono": "❄️",
+   "cat": "cocina",
+   "modo": "anual",
+   "kwh_anio": 260,
+   "potencia_w": 130,
+   "standby_w": 0,
+   "estacion": "heladera",
+   "rango": "20–40 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "uso": 24,
+    "inicio": 0
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 2,
+    "d": 1.3,
+    "h": 1.8,
+    "color": "#eef2f7",
+    "detalle": "puerta"
+   }
+  },
+  {
+   "id": "microondas",
+   "nombre": "Microondas 25 L",
+   "icono": "📡",
+   "cat": "cocina",
+   "modo": "horas",
+   "potencia_w": 1000,
+   "standby_w": 2,
+   "estacion": "todo",
+   "rango": "6–9 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "uso": 0.25,
+    "inicio": 13
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 1.1,
+    "d": 0.8,
+    "h": 0.7,
+    "color": "#3b4252",
+    "detalle": "pantalla",
+    "z": 1.8,
+    "apoyado": true
+   }
+  },
+  {
+   "id": "horno",
+   "nombre": "Horno eléctrico grande",
+   "icono": "🔥",
+   "cat": "cocina",
+   "modo": "horas",
+   "potencia_w": 2400,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "8–24 kWh/mes",
+   "def": {
+    "conectado": 2,
+    "uso": 0.25,
+    "inicio": 20,
+    "dias": 4
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 1.3,
+    "d": 1.1,
+    "h": 0.9,
+    "color": "#d9dee6",
+    "detalle": "pantalla",
+    "z": 1.8,
+    "apoyado": true
+   }
+  },
+  {
+   "id": "pava",
+   "nombre": "Pava eléctrica",
+   "icono": "🫖",
+   "cat": "cocina",
+   "modo": "horas",
+   "potencia_w": 2000,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "8–15 kWh/mes",
+   "def": {
+    "conectado": 1,
+    "uso": 0.25,
+    "inicio": 8
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 0.5,
+    "d": 0.5,
+    "h": 0.6,
+    "color": "#94a3b8",
+    "z": 1.8,
+    "apoyado": true
+   }
+  },
+  {
+   "id": "lavavajillas",
+   "nombre": "Lavavajillas 12 cubiertos",
+   "icono": "🍽️",
+   "cat": "cocina",
+   "modo": "ciclos",
+   "kwh_ciclo": 1.3,
+   "ciclo_h": 2,
+   "potencia_w": 1400,
+   "standby_w": 1,
+   "estacion": "todo",
+   "rango": "30–65 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "ciclos": 5,
+    "inicio": 22
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 1.2,
+    "d": 1.2,
+    "h": 1.7,
+    "color": "#e2e8f0",
+    "detalle": "puerta"
+   }
+  },
+  {
+   "id": "aire",
+   "nombre": "Aire 3.000 frigorías",
+   "icono": "❄️",
+   "cat": "clima",
+   "modo": "horas",
+   "potencia_w": 870,
+   "standby_w": 2,
+   "estacion": "verano",
+   "rango": "100–180 kWh/mes (verano)",
+   "nota": "Usar la potencia eléctrica de entrada (W), no la capacidad de frío.",
+   "def": {
+    "conectado": 24,
+    "uso": 4,
+    "inicio": 14
+   },
+   "amb": "living",
+   "iso": {
+    "w": 2.2,
+    "d": 0.5,
+    "h": 0.7,
+    "z": 4.3,
+    "color": "#f8fafc",
+    "detalle": "rejilla",
+    "montaje": "pared"
+   }
+  },
+  {
+   "id": "calefactor",
+   "nombre": "Calefactor eléctrico 2.000 W",
+   "icono": "♨️",
+   "cat": "clima",
+   "modo": "horas",
+   "potencia_w": 2000,
+   "standby_w": 0,
+   "estacion": "invierno",
+   "rango": "180–360 kWh/mes (invierno)",
+   "def": {
+    "conectado": 4,
+    "uso": 4,
+    "inicio": 19
+   },
+   "amb": "living",
+   "iso": {
+    "w": 1.4,
+    "d": 0.5,
+    "h": 1.3,
+    "color": "#f1f5f9",
+    "detalle": "rejilla"
+   }
+  },
+  {
+   "id": "ventilador",
+   "nombre": "Ventilador de pie",
+   "icono": "🌀",
+   "cat": "clima",
+   "modo": "horas",
+   "potencia_w": 60,
+   "standby_w": 0,
+   "estacion": "verano",
+   "rango": "5–12 kWh/mes (verano)",
+   "def": {
+    "conectado": 8,
+    "uso": 8,
+    "inicio": 15
+   },
+   "amb": "dormitorio",
+   "iso": {
+    "partes": [
+     {
+      "x": 0.3,
+      "y": 0.3,
+      "z": 0,
+      "w": 0.6,
+      "d": 0.6,
+      "h": 0.1,
+      "color": "#475569"
+     },
+     {
+      "x": 0.55,
+      "y": 0.55,
+      "z": 0.1,
+      "w": 0.1,
+      "d": 0.1,
+      "h": 1.8,
+      "color": "#64748b"
+     },
+     {
+      "x": 0.1,
+      "y": 0.45,
+      "z": 1.9,
+      "w": 1,
+      "d": 0.3,
+      "h": 1,
+      "color": "#cbd5e1"
+     }
+    ],
+    "w": 1.2,
+    "d": 1.2
+   }
+  },
+  {
+   "id": "termotanque",
+   "nombre": "Termotanque 50 L",
+   "icono": "🚿",
+   "cat": "agua",
+   "modo": "horas",
+   "potencia_w": 1500,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "90–180 kWh/mes",
+   "def": {
+    "conectado": 2,
+    "uso": 2,
+    "inicio": 6
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 1.1,
+    "d": 1.1,
+    "h": 2.6,
+    "z": 2.2,
+    "color": "#f8fafc",
+    "detalle": "termo",
+    "montaje": "pared"
+   }
+  },
+  {
+   "id": "lavarropas",
+   "nombre": "Lavarropas 8 kg",
+   "icono": "🫧",
+   "cat": "lavado",
+   "modo": "ciclos",
+   "kwh_ciclo": 0.9,
+   "ciclo_h": 1.5,
+   "potencia_w": 500,
+   "standby_w": 1,
+   "estacion": "todo",
+   "rango": "10–20 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "ciclos": 4,
+    "inicio": 10
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 1.2,
+    "d": 1.2,
+    "h": 1.7,
+    "color": "#f1f5f9",
+    "detalle": "ojo"
+   }
+  },
+  {
+   "id": "secarropas",
+   "nombre": "Secarropas por calor",
+   "icono": "🌬️",
+   "cat": "lavado",
+   "modo": "ciclos",
+   "kwh_ciclo": 2.5,
+   "ciclo_h": 1.2,
+   "potencia_w": 2200,
+   "standby_w": 1,
+   "estacion": "todo",
+   "rango": "25–65 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "ciclos": 2,
+    "inicio": 12
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 1.2,
+    "d": 1.2,
+    "h": 1.7,
+    "color": "#e2e8f0",
+    "detalle": "ojo"
+   }
+  },
+  {
+   "id": "plancha",
+   "nombre": "Plancha",
+   "icono": "👕",
+   "cat": "lavado",
+   "modo": "horas",
+   "potencia_w": 1200,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "2–6 kWh/mes",
+   "def": {
+    "conectado": 0.5,
+    "uso": 0.5,
+    "inicio": 18,
+    "dias": 2
+   },
+   "amb": "dormitorio",
+   "iso": {
+    "w": 0.6,
+    "d": 0.4,
+    "h": 0.3,
+    "color": "#38bdf8"
+   }
+  },
+  {
+   "id": "tv",
+   "nombre": "TV 50\"",
+   "icono": "📺",
+   "cat": "ocio",
+   "modo": "horas",
+   "potencia_w": 75,
+   "standby_w": 0.4,
+   "estacion": "todo",
+   "rango": "7–22 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "uso": 5,
+    "inicio": 19
+   },
+   "amb": "living",
+   "iso": {
+    "w": 2.4,
+    "d": 0.2,
+    "h": 1.4,
+    "z": 2,
+    "color": "#111827",
+    "detalle": "pantalla",
+    "montaje": "pared"
+   }
+  },
+  {
+   "id": "deco",
+   "nombre": "Decodificador de cable",
+   "icono": "📦",
+   "cat": "ocio",
+   "modo": "horas",
+   "potencia_w": 15,
+   "standby_w": 9,
+   "estacion": "todo",
+   "rango": "6–11 kWh/mes",
+   "nota": "Muchos decodificadores consumen casi lo mismo apagados.",
+   "def": {
+    "conectado": 24,
+    "uso": 5,
+    "inicio": 19
+   },
+   "amb": "living",
+   "iso": {
+    "w": 0.7,
+    "d": 0.5,
+    "h": 0.2,
+    "color": "#1f2937"
+   }
+  },
+  {
+   "id": "consola",
+   "nombre": "Consola de videojuegos",
+   "icono": "🎮",
+   "cat": "ocio",
+   "modo": "horas",
+   "potencia_w": 150,
+   "standby_w": 10,
+   "estacion": "todo",
+   "rango": "8–15 kWh/mes",
+   "nota": "El modo \"reposo con encendido rápido\" puede consumir más de 10 W todo el día.",
+   "def": {
+    "conectado": 24,
+    "uso": 2,
+    "inicio": 21
+   },
+   "amb": "living",
+   "iso": {
+    "w": 0.8,
+    "d": 0.6,
+    "h": 0.3,
+    "color": "#f8fafc"
+   }
+  },
+  {
+   "id": "parlante",
+   "nombre": "Equipo de música",
+   "icono": "🔊",
+   "cat": "ocio",
+   "modo": "horas",
+   "potencia_w": 40,
+   "standby_w": 3,
+   "estacion": "todo",
+   "rango": "2–4 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "uso": 1,
+    "inicio": 18
+   },
+   "amb": "living",
+   "iso": {
+    "w": 0.6,
+    "d": 0.6,
+    "h": 1.4,
+    "color": "#334155",
+    "detalle": "ojo"
+   }
+  },
+  {
+   "id": "notebook",
+   "nombre": "Notebook",
+   "icono": "💻",
+   "cat": "oficina",
+   "modo": "horas",
+   "potencia_w": 65,
+   "standby_w": 1,
+   "estacion": "todo",
+   "rango": "5–22 kWh/mes",
+   "def": {
+    "conectado": 8,
+    "uso": 6,
+    "inicio": 9
+   },
+   "amb": "dormitorio",
+   "iso": {
+    "w": 0.8,
+    "d": 0.6,
+    "h": 0.1,
+    "z": 1.5,
+    "color": "#94a3b8",
+    "apoyado": true
+   }
+  },
+  {
+   "id": "pc",
+   "nombre": "PC de escritorio + monitor",
+   "icono": "🖥️",
+   "cat": "oficina",
+   "modo": "horas",
+   "potencia_w": 250,
+   "standby_w": 4,
+   "estacion": "todo",
+   "rango": "25–45 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "uso": 4,
+    "inicio": 17
+   },
+   "amb": "dormitorio",
+   "iso": {
+    "w": 0.5,
+    "d": 1,
+    "h": 1,
+    "color": "#1e293b"
+   }
+  },
+  {
+   "id": "router",
+   "nombre": "Router / módem Wi-Fi",
+   "icono": "📶",
+   "cat": "oficina",
+   "modo": "siempre",
+   "potencia_w": 10,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "4–11 kWh/mes",
+   "def": {
+    "conectado": 24,
+    "uso": 24,
+    "inicio": 0
+   },
+   "amb": "living",
+   "iso": {
+    "w": 0.5,
+    "d": 0.4,
+    "h": 0.3,
+    "color": "#f8fafc"
+   }
+  },
+  {
+   "id": "cargador",
+   "nombre": "Cargador de celular",
+   "icono": "🔋",
+   "cat": "oficina",
+   "modo": "horas",
+   "potencia_w": 5,
+   "standby_w": 0.5,
+   "estacion": "todo",
+   "rango": "0,3–1 kWh/mes",
+   "nota": "Enchufado sin celular sigue consumiendo un poco.",
+   "def": {
+    "conectado": 24,
+    "uso": 2,
+    "inicio": 0,
+    "cantidad": 3
+   },
+   "amb": "dormitorio",
+   "iso": {
+    "w": 0.3,
+    "d": 0.3,
+    "h": 0.3,
+    "color": "#f8fafc"
+   }
+  },
+  {
+   "id": "led",
+   "nombre": "Lámpara LED 9 W",
+   "icono": "💡",
+   "cat": "luz",
+   "modo": "horas",
+   "potencia_w": 9,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "1 kWh/mes c/u",
+   "def": {
+    "conectado": 4,
+    "uso": 4,
+    "inicio": 19,
+    "cantidad": 8
+   },
+   "amb": "living",
+   "iso": {
+    "partes": [
+     {
+      "x": 0.25,
+      "y": 0.25,
+      "z": 0,
+      "w": 0.5,
+      "d": 0.5,
+      "h": 0.08,
+      "color": "#334155"
+     },
+     {
+      "x": 0.46,
+      "y": 0.46,
+      "z": 0.08,
+      "w": 0.08,
+      "d": 0.08,
+      "h": 2.6,
+      "color": "#475569"
+     },
+     {
+      "x": 0.15,
+      "y": 0.15,
+      "z": 2.6,
+      "w": 0.7,
+      "d": 0.7,
+      "h": 0.6,
+      "color": "#fde68a"
+     }
+    ],
+    "w": 1,
+    "d": 1,
+    "luz": true
+   }
+  },
+  {
+   "id": "halogena",
+   "nombre": "Lámpara halógena 50 W",
+   "icono": "🔆",
+   "cat": "luz",
+   "modo": "horas",
+   "potencia_w": 50,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "6 kWh/mes c/u",
+   "def": {
+    "conectado": 4,
+    "uso": 4,
+    "inicio": 19,
+    "cantidad": 2
+   },
+   "amb": "living",
+   "iso": {
+    "partes": [
+     {
+      "x": 0.25,
+      "y": 0.25,
+      "z": 0,
+      "w": 0.5,
+      "d": 0.5,
+      "h": 0.08,
+      "color": "#334155"
+     },
+     {
+      "x": 0.46,
+      "y": 0.46,
+      "z": 0.08,
+      "w": 0.08,
+      "d": 0.08,
+      "h": 2.6,
+      "color": "#475569"
+     },
+     {
+      "x": 0.15,
+      "y": 0.15,
+      "z": 2.6,
+      "w": 0.7,
+      "d": 0.7,
+      "h": 0.6,
+      "color": "#fdba74"
+     }
+    ],
+    "w": 1,
+    "d": 1,
+    "luz": true
+   }
+  },
+  {
+   "id": "bomba",
+   "nombre": "Bomba de agua 1 HP",
+   "icono": "💧",
+   "cat": "otros",
+   "modo": "horas",
+   "potencia_w": 750,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "10–15 kWh/mes",
+   "def": {
+    "conectado": 0.5,
+    "uso": 0.5,
+    "inicio": 7
+   },
+   "amb": "cocina",
+   "iso": {
+    "w": 0.8,
+    "d": 0.6,
+    "h": 0.6,
+    "color": "#2563eb"
+   }
+  },
+  {
+   "id": "aspiradora",
+   "nombre": "Aspiradora",
+   "icono": "🧹",
+   "cat": "otros",
+   "modo": "horas",
+   "potencia_w": 1200,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "2–5 kWh/mes",
+   "def": {
+    "conectado": 0.3,
+    "uso": 0.25,
+    "inicio": 11,
+    "dias": 3
+   },
+   "amb": "living",
+   "iso": {
+    "w": 0.6,
+    "d": 0.8,
+    "h": 0.6,
+    "color": "#ef4444"
+   }
+  },
+  {
+   "id": "secador",
+   "nombre": "Secador de pelo",
+   "icono": "💨",
+   "cat": "otros",
+   "modo": "horas",
+   "potencia_w": 1500,
+   "standby_w": 0,
+   "estacion": "todo",
+   "rango": "3–7 kWh/mes",
+   "def": {
+    "conectado": 0.25,
+    "uso": 0.25,
+    "inicio": 8
+   },
+   "amb": "dormitorio",
+   "iso": {
+    "w": 0.4,
+    "d": 0.3,
+    "h": 0.4,
+    "color": "#ec4899"
+   }
+  }
+ ],
+ "MUEBLES": [
+  {
+   "id": "sofa",
+   "nombre": "Sofá",
+   "icono": "🛋️",
+   "w": 4,
+   "d": 1.8,
+   "partes": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 4,
+     "d": 0.5,
+     "h": 1.7,
+     "color": "#6366f1"
+    },
+    {
+     "x": 0,
+     "y": 0.5,
+     "z": 0,
+     "w": 4,
+     "d": 1.3,
+     "h": 0.8,
+     "color": "#818cf8"
+    },
+    {
+     "x": 0,
+     "y": 0.5,
+     "z": 0.8,
+     "w": 0.4,
+     "d": 1.3,
+     "h": 0.5,
+     "color": "#6366f1"
+    },
+    {
+     "x": 3.6,
+     "y": 0.5,
+     "z": 0.8,
+     "w": 0.4,
+     "d": 1.3,
+     "h": 0.5,
+     "color": "#6366f1"
+    }
+   ]
+  },
+  {
+   "id": "cama",
+   "nombre": "Cama doble",
+   "icono": "🛏️",
+   "w": 3,
+   "d": 4,
+   "partes": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 3,
+     "d": 0.3,
+     "h": 2,
+     "color": "#a16207"
+    },
+    {
+     "x": 0,
+     "y": 0.3,
+     "z": 0,
+     "w": 3,
+     "d": 3.7,
+     "h": 0.7,
+     "color": "#b45309"
+    },
+    {
+     "x": 0.1,
+     "y": 0.3,
+     "z": 0.7,
+     "w": 2.8,
+     "d": 3.6,
+     "h": 0.3,
+     "color": "#f8fafc"
+    },
+    {
+     "x": 0.3,
+     "y": 0.4,
+     "z": 1,
+     "w": 1,
+     "d": 0.6,
+     "h": 0.25,
+     "color": "#e0e7ff"
+    },
+    {
+     "x": 1.7,
+     "y": 0.4,
+     "z": 1,
+     "w": 1,
+     "d": 0.6,
+     "h": 0.25,
+     "color": "#e0e7ff"
+    },
+    {
+     "x": 0.1,
+     "y": 1.6,
+     "z": 1,
+     "w": 2.8,
+     "d": 2.3,
+     "h": 0.08,
+     "color": "#93c5fd"
+    }
+   ]
+  },
+  {
+   "id": "mesa",
+   "nombre": "Mesa",
+   "icono": "🪑",
+   "w": 3,
+   "d": 2,
+   "partes": [
+    {
+     "x": 0.1,
+     "y": 0.1,
+     "z": 0,
+     "w": 0.2,
+     "d": 0.2,
+     "h": 1.5,
+     "color": "#92400e"
+    },
+    {
+     "x": 2.7,
+     "y": 0.1,
+     "z": 0,
+     "w": 0.2,
+     "d": 0.2,
+     "h": 1.5,
+     "color": "#92400e"
+    },
+    {
+     "x": 0.1,
+     "y": 1.7,
+     "z": 0,
+     "w": 0.2,
+     "d": 0.2,
+     "h": 1.5,
+     "color": "#92400e"
+    },
+    {
+     "x": 2.7,
+     "y": 1.7,
+     "z": 0,
+     "w": 0.2,
+     "d": 0.2,
+     "h": 1.5,
+     "color": "#92400e"
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "z": 1.5,
+     "w": 3,
+     "d": 2,
+     "h": 0.15,
+     "color": "#b45309"
+    }
+   ]
+  },
+  {
+   "id": "escritorio",
+   "nombre": "Escritorio",
+   "icono": "🗄️",
+   "w": 3,
+   "d": 1.4,
+   "partes": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 1,
+     "d": 1.4,
+     "h": 1.5,
+     "color": "#cbd5e1"
+    },
+    {
+     "x": 2.8,
+     "y": 0,
+     "z": 0,
+     "w": 0.2,
+     "d": 1.4,
+     "h": 1.5,
+     "color": "#94a3b8"
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "z": 1.5,
+     "w": 3,
+     "d": 1.4,
+     "h": 0.12,
+     "color": "#f1f5f9"
+    }
+   ]
+  },
+  {
+   "id": "mesada",
+   "nombre": "Mesada de cocina",
+   "icono": "🧱",
+   "w": 5,
+   "d": 1.2,
+   "partes": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 5,
+     "d": 1.2,
+     "h": 1.7,
+     "color": "#e7e5e4"
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "z": 1.7,
+     "w": 5,
+     "d": 1.2,
+     "h": 0.12,
+     "color": "#57534e"
+    }
+   ]
+  },
+  {
+   "id": "biblioteca",
+   "nombre": "Biblioteca",
+   "icono": "📚",
+   "w": 2,
+   "d": 0.8,
+   "partes": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 2,
+     "d": 0.8,
+     "h": 4,
+     "color": "#78350f"
+    },
+    {
+     "x": 0.1,
+     "y": 0.7,
+     "z": 0.3,
+     "w": 1.8,
+     "d": 0.12,
+     "h": 0.9,
+     "color": "#ef4444"
+    },
+    {
+     "x": 0.1,
+     "y": 0.7,
+     "z": 1.5,
+     "w": 1.8,
+     "d": 0.12,
+     "h": 0.9,
+     "color": "#22c55e"
+    },
+    {
+     "x": 0.1,
+     "y": 0.7,
+     "z": 2.7,
+     "w": 1.8,
+     "d": 0.12,
+     "h": 0.9,
+     "color": "#3b82f6"
+    }
+   ]
+  },
+  {
+   "id": "alfombra",
+   "nombre": "Alfombra",
+   "icono": "🟫",
+   "w": 4,
+   "d": 3,
+   "partes": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 4,
+     "d": 3,
+     "h": 0.05,
+     "color": "#f59e0b"
+    }
+   ]
+  },
+  {
+   "id": "planta",
+   "nombre": "Planta",
+   "icono": "🪴",
+   "w": 1,
+   "d": 1,
+   "partes": [
+    {
+     "x": 0.2,
+     "y": 0.2,
+     "z": 0,
+     "w": 0.6,
+     "d": 0.6,
+     "h": 0.7,
+     "color": "#c2410c"
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0.7,
+     "w": 1,
+     "d": 1,
+     "h": 1.2,
+     "color": "#16a34a"
+    }
+   ]
+  },
+  {
+   "id": "silla",
+   "nombre": "Silla",
+   "icono": "🪑",
+   "w": 1,
+   "d": 1,
+   "partes": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 1,
+     "d": 0.15,
+     "h": 2,
+     "color": "#78716c"
+    },
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0.9,
+     "w": 1,
+     "d": 1,
+     "h": 0.12,
+     "color": "#a8a29e"
+    },
+    {
+     "x": 0.05,
+     "y": 0.85,
+     "z": 0,
+     "w": 0.1,
+     "d": 0.1,
+     "h": 0.9,
+     "color": "#78716c"
+    },
+    {
+     "x": 0.85,
+     "y": 0.85,
+     "z": 0,
+     "w": 0.1,
+     "d": 0.1,
+     "h": 0.9,
+     "color": "#78716c"
+    }
+   ]
+  },
+  {
+   "id": "placard",
+   "nombre": "Placard",
+   "icono": "🚪",
+   "w": 3,
+   "d": 1.2,
+   "partes": [
+    {
+     "x": 0,
+     "y": 0,
+     "z": 0,
+     "w": 3,
+     "d": 1.2,
+     "h": 4.6,
+     "color": "#d6d3d1"
+    }
+   ]
+  }
+ ],
+ "AMBIENTES": [
+  {
+   "id": "living",
+   "nombre": "Living",
+   "icono": "🛋️",
+   "piso": [
+    "#e7d7c1",
+    "#dcc8ad"
+   ]
+  },
+  {
+   "id": "cocina",
+   "nombre": "Cocina",
+   "icono": "🍳",
+   "piso": [
+    "#e2e8f0",
+    "#cbd5e1"
+   ]
+  },
+  {
+   "id": "dormitorio",
+   "nombre": "Dormitorio",
+   "icono": "🛏️",
+   "piso": [
+    "#ede0d4",
+    "#e0cfc0"
+   ]
+  }
+ ],
+ "ESCENA_INICIAL": [
+  {
+   "tipo": "alfombra",
+   "amb": "living",
+   "x": 3.5,
+   "y": 3,
+   "rot": 0
+  },
+  {
+   "tipo": "sofa",
+   "amb": "living",
+   "x": 3.5,
+   "y": 6.5,
+   "rot": 2
+  },
+  {
+   "tipo": "planta",
+   "amb": "living",
+   "x": 0.5,
+   "y": 0.5,
+   "rot": 0
+  },
+  {
+   "tipo": "biblioteca",
+   "amb": "living",
+   "x": 9.5,
+   "y": 0.2,
+   "rot": 0
+  },
+  {
+   "tipo": "mesada",
+   "amb": "cocina",
+   "x": 3,
+   "y": 0,
+   "rot": 0
+  },
+  {
+   "tipo": "mesa",
+   "amb": "cocina",
+   "x": 5,
+   "y": 5,
+   "rot": 0
+  },
+  {
+   "tipo": "silla",
+   "amb": "cocina",
+   "x": 5.3,
+   "y": 7.3,
+   "rot": 2
+  },
+  {
+   "tipo": "silla",
+   "amb": "cocina",
+   "x": 6.8,
+   "y": 7.3,
+   "rot": 2
+  },
+  {
+   "tipo": "cama",
+   "amb": "dormitorio",
+   "x": 4,
+   "y": 0,
+   "rot": 0
+  },
+  {
+   "tipo": "placard",
+   "amb": "dormitorio",
+   "x": 0,
+   "y": 6,
+   "rot": 3
+  },
+  {
+   "tipo": "escritorio",
+   "amb": "dormitorio",
+   "x": 8.5,
+   "y": 0,
+   "rot": 0
+  },
+  {
+   "tipo": "planta",
+   "amb": "dormitorio",
+   "x": 10.5,
+   "y": 8.5,
+   "rot": 0
+  }
+ ],
+ "PERFILES": {
+  "ejemplo": {
+   "nombre": "Ejemplo de la propuesta",
+   "icono": "🧪",
+   "desc": "Los artefactos del ejemplo de la propuesta (heladera, aire, TV y termotanque) y un cargador de celular.",
+   "base_w": 12,
+   "items": [
+    [
+     "heladera",
+     {
+      "kwh_anio": 350,
+      "nombre": "Heladera"
+     }
+    ],
+    [
+     "aire",
+     {
+      "standby_w": 0,
+      "conectado": 4,
+      "uso": 4,
+      "potencia_w": 1200,
+      "nombre": "Aire split frío 2.600 frig."
+     }
+    ],
+    [
+     "tv",
+     {
+      "standby_w": 0,
+      "conectado": 5,
+      "uso": 5,
+      "potencia_w": 80,
+      "nombre": "TV LED 50\""
+     }
+    ],
+    [
+     "termotanque",
+     {}
+    ],
+    [
+     "cargador",
+     {
+      "cantidad": 1
+     }
+    ]
+   ]
+  },
+  "uno": {
+   "nombre": "1 persona",
+   "icono": "🧍",
+   "desc": "Departamento chico, uso básico.",
+   "base_w": 8,
+   "items": [
+    [
+     "heladera",
+     {}
+    ],
+    [
+     "tv",
+     {
+      "uso": 3
+     }
+    ],
+    [
+     "notebook",
+     {}
+    ],
+    [
+     "router",
+     {}
+    ],
+    [
+     "cargador",
+     {
+      "cantidad": 1
+     }
+    ],
+    [
+     "led",
+     {
+      "cantidad": 5
+     }
+    ],
+    [
+     "microondas",
+     {}
+    ],
+    [
+     "pava",
+     {}
+    ]
+   ]
+  },
+  "pareja": {
+   "nombre": "Pareja",
+   "icono": "👫",
+   "desc": "Dos personas, con aire en verano.",
+   "base_w": 10,
+   "items": [
+    [
+     "heladera",
+     {}
+    ],
+    [
+     "tv",
+     {}
+    ],
+    [
+     "deco",
+     {}
+    ],
+    [
+     "notebook",
+     {
+      "cantidad": 2
+     }
+    ],
+    [
+     "router",
+     {}
+    ],
+    [
+     "cargador",
+     {
+      "cantidad": 2
+     }
+    ],
+    [
+     "led",
+     {
+      "cantidad": 8
+     }
+    ],
+    [
+     "microondas",
+     {}
+    ],
+    [
+     "pava",
+     {}
+    ],
+    [
+     "lavarropas",
+     {
+      "ciclos": 3
+     }
+    ],
+    [
+     "aire",
+     {}
+    ]
+   ]
+  },
+  "familia": {
+   "nombre": "Familia",
+   "icono": "👨‍👩‍👧‍👦",
+   "desc": "Cuatro personas, casa con termotanque eléctrico.",
+   "base_w": 15,
+   "items": [
+    [
+     "heladera",
+     {}
+    ],
+    [
+     "freezer",
+     {}
+    ],
+    [
+     "tv",
+     {}
+    ],
+    [
+     "tv",
+     {
+      "uso": 3
+     }
+    ],
+    [
+     "deco",
+     {}
+    ],
+    [
+     "consola",
+     {}
+    ],
+    [
+     "pc",
+     {}
+    ],
+    [
+     "notebook",
+     {}
+    ],
+    [
+     "router",
+     {}
+    ],
+    [
+     "cargador",
+     {
+      "cantidad": 4
+     }
+    ],
+    [
+     "led",
+     {
+      "cantidad": 14
+     }
+    ],
+    [
+     "microondas",
+     {}
+    ],
+    [
+     "pava",
+     {}
+    ],
+    [
+     "lavarropas",
+     {
+      "ciclos": 6
+     }
+    ],
+    [
+     "secarropas",
+     {}
+    ],
+    [
+     "aire",
+     {}
+    ],
+    [
+     "aire",
+     {
+      "uso": 6,
+      "inicio": 23
+     }
+    ],
+    [
+     "termotanque",
+     {
+      "conectado": 3,
+      "uso": 3
+     }
+    ],
+    [
+     "calefactor",
+     {
+      "uso": 3,
+      "conectado": 3
+     }
+    ]
+   ]
+  },
+  "vacio": {
+   "nombre": "Empezar de cero",
+   "icono": "✨",
+   "desc": "Casa vacía para armar a tu manera.",
+   "base_w": 0,
+   "items": []
+  }
+ },
+ "TARIFAS": {
+  "version": 1,
+  "vigencia_desde": "ilustrativo",
+  "fuente": "Valores de ejemplo de la propuesta (sección 6.3). No son el cuadro tarifario vigente de EDEA.",
+  "precio_pleno": 150,
+  "cargo_fijo": 5000,
+  "iva": 0.21,
+  "escenarios": {
+   "sin_subsidio": {
+    "nombre": "Sin subsidio",
+    "corto": "Sin subsidio",
+    "icono": "💸",
+    "color": "var(--c-full)",
+    "desc": "Precio pleno para todos los kWh.",
+    "precio": null,
+    "tope": null
+   },
+   "social_nacional": {
+    "nombre": "Tarifa social nacional",
+    "corto": "Social nacional",
+    "icono": "🤝",
+    "color": "var(--c-nac)",
+    "desc": "Precio bonificado hasta un tope mensual; el excedente paga precio pleno.",
+    "precio": 90,
+    "tope": 350
+   },
+   "social_provincial": {
+    "nombre": "Tarifa social provincial",
+    "corto": "Social provincial",
+    "icono": "🏛️",
+    "color": "var(--c-prov)",
+    "desc": "Bonificación de la provincia de Buenos Aires (EDEA). No se acumula con la nacional en este simulador.",
+    "precio": 72,
+    "tope": 350
+   }
+  }
+ }
+}
