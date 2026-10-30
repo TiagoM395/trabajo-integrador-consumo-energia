@@ -16,7 +16,8 @@ E.sincronizar()
 ui.estilos()
 
 paginas = [
-    st.Page("app_pages/casa.py", title="Mi casa", icon=":material/home:", default=True),
+    st.Page("app_pages/inicio.py", title="Inicio", icon=":material/dashboard:", default=True),
+    st.Page("app_pages/casa.py", title="Mi casa", icon=":material/home:"),
     st.Page("app_pages/ambiente.py", title="Ambiente 3D", icon=":material/view_in_ar:"),
     st.Page("app_pages/factura.py", title="Factura", icon=":material/receipt_long:"),
     st.Page("app_pages/analisis.py", title="Análisis", icon=":material/analytics:"),
@@ -30,8 +31,8 @@ encabezado = st.container()
 
 pagina.run()
 
-# El resumen de la casa no va en Análisis, que trata del dataset y no de la casa.
-if pagina.title != "Análisis":
+# El resumen de la casa no va en Inicio ni en Análisis.
+if pagina.title not in ("Inicio", "Análisis"):
     with encabezado:
         ui.hero(E.resultados())
 
