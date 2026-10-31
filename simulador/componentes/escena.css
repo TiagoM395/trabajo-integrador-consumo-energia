@@ -5,8 +5,8 @@
   --line: var(--st-border-color, #e2e8f0);
   --acc: #10b981;
   --acc2: #3b82f6;
-  --wall-a: color-mix(in srgb, #efe7da 82%, var(--panel));
-  --wall-b: color-mix(in srgb, #e2d8c8 82%, var(--panel));
+  --wall-a: color-mix(in srgb, #f2eee7 82%, var(--panel));
+  --wall-b: color-mix(in srgb, #d9d4cc 82%, var(--panel));
   font-family: var(--st-font, system-ui, sans-serif);
   color: var(--ink);
   display: block;
@@ -20,8 +20,9 @@
 .seg button.on { background: var(--panel); opacity: 1; box-shadow: 0 1px 6px rgba(0, 0, 0, .12); }
 .lienzo {
   border-radius: 16px; touch-action: none; user-select: none; overflow: hidden; outline: none;
-  background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--acc2) 12%, var(--panel-2)), var(--panel-2));
-  border: 1px solid var(--line);
+  background: radial-gradient(ellipse at 50% 28%, color-mix(in srgb, #cbd5e1 24%, var(--panel-2)), color-mix(in srgb, #64748b 10%, var(--panel-2)));
+  border: 1px solid color-mix(in srgb, var(--line) 75%, #94a3b8);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 12px 30px -24px rgba(15,23,42,.35);
 }
 .lienzo:focus-visible { box-shadow: 0 0 0 3px var(--acc2); }
 .reloj { display: flex; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--panel-2); border: 1px solid var(--line); }
@@ -34,20 +35,63 @@
 .ayuda { font-size: .78rem; opacity: .65; margin: 0; }
 
 .iso { width: 100%; height: auto; display: block; }
+.iso .jardin { fill: url(#cesped); }
+.iso .textura-jardin { fill: url(#texturaCesped); opacity: .3; pointer-events: none; }
+.iso .losa-patio { fill: url(#sendero); stroke: rgba(96,83,66,.42); stroke-width: .8; }
+.iso .pasto { fill: none; stroke: #a9bd83; stroke-width: 1.3; stroke-linecap: round; opacity: .62; animation: brisa-pasto 3.6s ease-in-out infinite alternate; }
+.iso .pasto:nth-of-type(3n) { animation-delay: -1.2s; }
+.iso .sombra-arbol { fill: rgba(35,59,39,.18); filter: blur(3px); }
+.iso .tronco-arbol { stroke: rgba(62,43,29,.48); stroke-width: .8; }
+.iso .rama-arbol { fill: none; stroke: #75563d; stroke-width: 2.4; stroke-linecap: round; }
+.iso .copa { fill: url(#copa); stroke: rgba(49,83,53,.48); stroke-width: .8; animation: copa-viva 5s ease-in-out infinite alternate; }
+.iso .copa-1 { fill: #789967; animation-delay: -1.1s; }
+.iso .copa-2 { fill: #587d58; animation-delay: -2.2s; }
+.iso .flor-copa { fill: #c9d18c; opacity: .65; }
+.iso .halo-luciernaga { fill: #d6ef8d; filter: blur(5px); animation: brillo-luciernaga 1.8s ease-in-out infinite alternate; }
+.iso .luciernaga { fill: #f0ff9a; filter: drop-shadow(0 0 5px #dafa73); animation: brillo-luciernaga 1.8s ease-in-out infinite alternate; }
 .iso .pared.a { fill: var(--wall-a); }
 .iso .pared.b { fill: var(--wall-b); }
-.iso .pared-borde { fill: color-mix(in srgb, var(--wall-a) 70%, #000); }
-.iso .ventana { stroke: #fff; stroke-width: 4; stroke-linejoin: round; }
-.iso .marco { stroke: #fff; stroke-width: 2.5; fill: none; }
-.iso .sol { fill: #fde047; filter: drop-shadow(0 0 6px #fde047); }
+.iso .pared-borde { fill: #b8b2a9; stroke: rgba(255,255,255,.42); stroke-width: 1.2; }
+.iso .panel { fill: rgba(255,255,255,.09); stroke: rgba(255,255,255,.35); stroke-width: 1; }
+.iso .pared-panel-b { fill: rgba(255,255,255,.055); stroke: rgba(255,255,255,.27); }
+.iso .moldura { fill: none; stroke-linejoin: round; }
+.iso .zocalo { stroke: #b5aea4; stroke-width: 6; }
+.iso .cornisa { stroke: rgba(255,255,255,.78); stroke-width: 5; }
+.iso .contorno-piso { fill: none; stroke: rgba(104,96,87,.45); stroke-width: 1.5; }
+.iso .cuadro-sombra { fill: #b7afa4; transform: translate(3px, 3px); }
+.iso .cuadro-marco { fill: #f7f4ed; stroke: #a99c8b; stroke-width: 1.2; }
+.iso .cuadro-lienzo { fill: #e8dfd1; }
+.iso .arte-forma { stroke: rgba(74,65,56,.18); stroke-width: .8; }
+.iso .arte-terracota { fill: #b9785c; }
+.iso .arte-salvia { fill: #758b79; }
+.iso .arte-linea { fill: none; stroke: rgba(255,255,255,.7); stroke-width: 2; }
+.iso .ventana { stroke: #f8fafc; stroke-width: 5; stroke-linejoin: round; }
+.iso .marco { stroke: rgba(255,255,255,.94); stroke-width: 2.5; fill: none; }
+.iso .marco-ventana { fill: none; stroke: #f8fafc; stroke-width: 7; stroke-linejoin: round; filter: drop-shadow(0 2px 3px rgba(15,23,42,.24)); }
+.iso .reflejo { fill: rgba(255,255,255,.22); }
+.iso .cortina { fill: #d6c5b4; stroke: rgba(114,91,72,.25); stroke-width: 1; animation: cortina 5s ease-in-out infinite alternate; }
+.iso .nube { fill: rgba(255,255,255,.78); filter: drop-shadow(0 1px 2px rgba(255,255,255,.35)); animation: nube 12s ease-in-out infinite alternate; }
+.iso .sol { fill: #fde047; filter: drop-shadow(0 0 8px #fde047); animation: sol 3.2s ease-in-out infinite alternate; }
 .iso .luna { fill: #f1f5f9; filter: drop-shadow(0 0 4px #c7d2fe); }
-.iso .puerta { fill: color-mix(in srgb, #92400e 75%, var(--wall-b)); }
-.iso .baldosa { stroke: rgba(0, 0, 0, .05); stroke-width: .5; }
-.iso .zocalo { fill: none; stroke: rgba(0, 0, 0, .15); stroke-width: 3; }
-.iso .cara { stroke: rgba(15, 23, 42, .28); stroke-width: .7; stroke-linejoin: round; }
+.iso .estrella { fill: #fff7c2; filter: drop-shadow(0 0 3px #fff7c2); animation: led 2s infinite alternate; }
+.iso .puerta { fill: #76533f; stroke: #5b3e30; stroke-width: 1.2; }
+.iso .marco-puerta { fill: none; stroke: #b89a7f; stroke-width: 6; stroke-linejoin: round; }
+.iso .panel-puerta { fill: rgba(255,255,255,.055); stroke: rgba(233,214,192,.36); stroke-width: 1.2; }
+.iso .picaporte { fill: #d9bd82; stroke: #987b4c; stroke-width: 1.2; }
+.iso .baldosa { stroke: rgba(83, 68, 51, .12); stroke-width: .65; }
+.iso .cara { stroke: rgba(15, 23, 42, .22); stroke-width: .65; stroke-linejoin: round; transition: filter .2s ease, stroke .2s ease; }
+.iso .mueble .cara { stroke: rgba(26,35,48,.25); }
+.iso .mueble:hover .cara { filter: brightness(1.08) drop-shadow(0 2px 2px rgba(15,23,42,.12)); }
+.iso .cojin { stroke: rgba(49,46,129,.28); }
+.iso .sombra-obj { opacity: .8; }
+.iso .alfombra-borde { fill: none; stroke: rgba(255,255,255,.72); stroke-width: 2; stroke-dasharray: 1 0; }
+.iso .hoja { fill: #4f8d62; stroke: rgba(28,78,45,.55); stroke-width: 1; animation: hoja 3.8s ease-in-out infinite alternate; }
+.iso .hoja-1 { fill: #78a76e; animation-delay: -.8s; }
+.iso .hoja-2 { fill: #326c4b; animation-delay: -1.6s; }
+.iso .tallo { fill: none; stroke: #477754; stroke-width: 1.3; stroke-linecap: round; }
+.iso .nervadura { fill: none; stroke: rgba(227,239,205,.55); stroke-width: .8; stroke-linecap: round; }
 .iso .obj { cursor: grab; }
 .iso .obj:active { cursor: grabbing; }
-.iso .obj:hover .cara { filter: brightness(1.06); }
 .iso .huella { fill: rgba(15, 23, 42, .12); }
 .iso .huella.sel { fill: color-mix(in srgb, var(--acc2) 22%, transparent); stroke: var(--acc2); stroke-width: 2; stroke-dasharray: 6 4; animation: hormigas 1s linear infinite; }
 @keyframes hormigas { to { stroke-dashoffset: -20; } }
@@ -63,6 +107,13 @@
 @keyframes gira { 50% { fill: #38bdf8; } }
 .iso .aura { animation: pulso 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; pointer-events: none; }
 @keyframes pulso { 50% { transform: scale(1.12); } }
+@keyframes sol { to { opacity: .72; filter: drop-shadow(0 0 13px #fde047); } }
+@keyframes nube { to { transform: translateX(7px); } }
+@keyframes cortina { to { opacity: .8; } }
+@keyframes hoja { to { opacity: .78; } }
+@keyframes copa-viva { to { opacity: .78; } }
+@keyframes brisa-pasto { to { opacity: .48; } }
+@keyframes brillo-luciernaga { to { opacity: .2; } }
 .iso .luz-halo { mix-blend-mode: screen; pointer-events: none; }
 .iso .noche-capa { fill: #0b1026; pointer-events: none; mix-blend-mode: multiply; }
 .iso .globo { cursor: pointer; }

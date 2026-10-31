@@ -192,4 +192,4 @@ ejemplo en `simulador/datos/datos.json` y en las pruebas; la app usa el cuadro r
 |---|---|
 | UCI — Individual Household Electric Power Consumption (hogar de Sceaux, Francia, 2006–2010) | https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption |
 | `clima_sceaux.csv` (temperatura diaria 2006–2011 del mismo lugar, en la carpeta del proyecto) | Open-Meteo Historical Weather API — https://open-meteo.com/ (punto lat 48,78, lon 2,29) |
-| `modelos/reg_24h.pkl` y `modelos/clf_me_paso.pkl` (Pipelines entrenados) | Notebook del trabajo, entrenado con los dos datos de arriba. Métricas y preparación: [`../README_ANALISIS.md`](../explicaciones/README_ANALISIS.md) |
+| UCI — Individual Household Electric Power Consumption | [`entrenamiento_modelos.py`](../entrenamiento_modelos.py) descarga y prepara la fuente para el notebook reproducible [`entrenamiento_modelos.ipynb`](../notebooks/entrenamiento_modelos.ipynb); la evaluación está en [`README_ANALISIS.md`](../explicaciones/README_ANALISIS.md). Los `.pkl` de producción son artefactos ya entrenados y no se sobrescriben al ejecutar el notebook. |

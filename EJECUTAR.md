@@ -68,30 +68,37 @@ Tesseract es un programa del sistema, no un paquete de Python: por eso no está 
 
 Los códigos QR y de barras se leen con `zxing-cpp`, que se instala con `requirements.txt`.
 
-## 6. Publicar en internet (gratis) con GitHub + Streamlit Community Cloud
+## 6. Publicar en internet (gratis) con Streamlit Community Cloud
 
-> Streamlit Community Cloud publica gratis directo desde GitHub y da una dirección **HTTPS**
-> (así la cámara del celular funciona en la pestaña *Factura*).
+Streamlit Community Cloud publica desde GitHub y entrega una dirección **HTTPS**, necesaria para
+usar la cámara del celular en la pestaña *Factura*. Este proyecto ya tiene como repositorio remoto
+público `TiagoM395/trabajo-integrador-consumo-energia`, con `streamlit_app.py` en la raíz.
 
-1. Subí el proyecto a un repositorio de GitHub:
-   ```bash
-   git init
-   git add .
-   git commit -m "Me paso o no me paso"
-   git branch -M main
-   git remote add origin https://github.com/USUARIO/REPOSITORIO.git
-   git push -u origin main
-   ```
-   (`datos/crudos/` no se sube: está en `.gitignore`. El dataset limpio sí.)
-2. Entrá a https://share.streamlit.io con tu cuenta de GitHub.
-3. **Create app → Deploy a public app from GitHub**.
-4. Elegí el repositorio, la rama `main` y el archivo **`streamlit_app.py`**.
-5. En *Advanced settings* elegí **Python 3.12** o superior.
-6. **Deploy**. En unos minutos tenés una URL del tipo `https://NOMBRE.streamlit.app`.
+1. Verificá que la versión que querés publicar ya esté subida a GitHub. Community Cloud despliega
+   los commits de GitHub, no los cambios locales sin commit. La rama de trabajo actual es `tiago2`;
+   si vas a desplegar esa versión, primero subí los cambios a esa rama. También podés desplegar
+   `main` si esa es la versión aprobada.
+2. Entrá a <https://share.streamlit.io> con la cuenta de GitHub que tiene acceso al repositorio.
+3. Elegí **Create app → Deploy a public app from GitHub**.
+4. Seleccioná el repositorio `TiagoM395/trabajo-integrador-consumo-energia`, la rama que contiene
+   la versión deseada y el archivo **`streamlit_app.py`**.
+5. En *Advanced settings*, seleccioná **Python 3.12**. Las dependencias Python están fijadas en
+   `requirements.txt`; Tesseract y español se instalan desde `packages.txt`.
+6. Elegí el nombre de la URL pública y presioná **Deploy**. Al terminar, la dirección será del
+   tipo `https://NOMBRE.streamlit.app`.
 
-Cada `git push` actualiza la app publicada automáticamente.
+Cada `git push` a la rama seleccionada actualiza la aplicación publicada automáticamente. Los
+modelos están versionados en `modelos/` y la app los carga localmente; no hace falta configurar
+Secrets para ejecutarla.
 
-Los modelos (`modelos/*.pkl`) se suben con el proyecto: la app los necesita para la predicción.
+**App creada:** <https://me-paso-consumo-energia-tiago.streamlit.app/> (rama `main`, Python 3.12).
+La versión subida actualmente muestra un error en **Análisis** porque ese commit no incluye
+`explicaciones/README_ANALISIS.md`; sincronizá los archivos de análisis antes de compartirla como
+entrega terminada. La visualización en teléfonos ya fue comprobada y funciona correctamente.
+
+**Persistencia:** las casas guardadas se escriben en `sesiones/` en el disco local de la app. En
+Community Cloud ese almacenamiento no es persistente ante reinicios o recreaciones del entorno;
+compartí la URL de una casa solo como enlace temporal hasta decidir una base de datos persistente.
 
 ## 7. Correr las pruebas
 
@@ -99,7 +106,8 @@ Los modelos (`modelos/*.pkl`) se suben con el proyecto: la app los necesita para
 python -m unittest discover -s tests -v
 ```
 
-Deben pasar las 19 pruebas (cálculo, factura de EDEA, curva horaria y lectura de facturas con texto, QR y subsidio).
+Deben pasar las 23 pruebas (cálculo, factura de EDEA, curva horaria, lectura de facturas con
+texto, QR y subsidio, y preparación/separación temporal de los datos).
 
 ## 8. Actualizar el dataset de eficiencia (opcional)
 
