@@ -35,7 +35,7 @@ siempre visibles (también en el celular). No hay barra lateral.
 | 🏠 **Mi casa** | Cuatro pasos de arriba hacia abajo: **1** tu situación (subsidio, consumo de base, reiniciar) · **2** armá tu casa (perfiles y electrodomésticos) · **3** lo que gastás por mes (**cálculo**) · **4** ¿mañana te pasás de la meta? (**predicción** con los modelos) | [`README_MI_CASA.md`](explicaciones/README_MI_CASA.md) · paso 4: [`README_PREDICCION.md`](explicaciones/README_PREDICCION.md) |
 | 🧊 **Ambiente 3D** | La misma casa dibujada en tres ambientes: se arrastran muebles y electrodomésticos, cada uno muestra su consumo y el botón ▶ simula un día | [`README_AMBIENTE_3D.md`](explicaciones/README_AMBIENTE_3D.md) |
 | 🧾 **Factura** | Escanea la factura (PDF, foto o cámara): consumo, período, importe, vencimiento, subsidio y QR. Calibra la simulación con el consumo real | [`README_FACTURA.md`](explicaciones/README_FACTURA.md) |
-| 🔬 **Análisis** | El trabajo con el dataset y los modelos, paso a paso: datos, variables, ajustes para Argentina, separación, baselines, métricas, comparación de alertas, errores y limitaciones | [`README_ANALISIS.md`](explicaciones/README_ANALISIS.md) |
+| 🔬 **Análisis** | El trabajo con el dataset y los modelos, paso a paso: datos, variables, ajustes para Argentina, separación, baselines, métricas, comparación de alertas, errores y limitaciones | [`README_ANALISIS.md`](explicaciones/README_ANALISIS.md) · [notebook reproducible](notebooks/entrenamiento_modelos.ipynb) |
 
 Los dos modelos de aprendizaje automático del paso 4 tienen su propio README:
 
@@ -80,12 +80,13 @@ arma sus 16 variables con lo que cargaste en la casa o en la factura:
 
 | Modelo | Qué responde | Resultado en prueba |
 |---|---|---|
-| Regresión: KNN k=25 (StandardScaler en un Pipeline) | ¿Cuántos kWh vas a usar en las próximas 24 h? | MAE 4,57 kWh · R² 0,31 |
-| Clasificación: GaussianNB | ¿Te pasás de la meta diaria (25,9 kWh)? | Accuracy 0,74 · Recall 0,63 |
+| Regresión: KNN k=25 (StandardScaler en un Pipeline) | ¿Cuántos kWh vas a usar en las próximas 24 h? | Prueba reproducible: MAE 4,557 kWh · R² 0,304 |
+| Clasificación: GaussianNB | ¿Te pasás de la meta diaria (25,9 kWh)? | Prueba reproducible: accuracy 0,738 · recall 0,700 |
 
 El resultado es un semáforo: 🟢 no te pasás · 🟡 estás cerca o los modelos no se ponen de acuerdo
 · 🔴 te pasás. Cómo se prepararon los datos y se entrenaron los modelos está en la pestaña
-*Análisis* ([`README_ANALISIS.md`](explicaciones/README_ANALISIS.md)).
+*Análisis* ([`README_ANALISIS.md`](explicaciones/README_ANALISIS.md)); el entrenamiento y la
+evaluación se pueden repetir en el [notebook](notebooks/entrenamiento_modelos.ipynb).
 
 ---
 
@@ -133,6 +134,10 @@ datos/                        ← tarifas, impuestos, dataset de eficiencia, scr
 tests/
   test_calculo.py             ← pruebas del cálculo y de la factura de EDEA
   test_factura.py             ← pruebas de la lectura de facturas (texto, QR y subsidio)
+  test_entrenamiento_modelos.py ← pruebas de ventanas objetivo y partición temporal
+entrenamiento_modelos.py      ← preparación de datos y comparación de modelos
+notebooks/
+  entrenamiento_modelos.ipynb ← notebook reproducible de entrenamiento y evaluación
 .streamlit/config.toml        ← tema claro/oscuro y límite de subida de 10 MB
 requirements.txt              ← paquetes de Python con versiones
 packages.txt                  ← Tesseract con español, para Streamlit Community Cloud
@@ -157,7 +162,7 @@ abrir_simulador.bat           ← abre la app con doble clic (Windows)
 
 ## 7. Verificación
 
-19 pruebas automáticas (`python -m unittest discover -s tests -v`), entre ellas los ejemplos de la
+23 pruebas automáticas (`python -m unittest discover -s tests -v`), entre ellas los ejemplos de la
 propuesta:
 
 | Ejemplo | Esperado | Resultado |
