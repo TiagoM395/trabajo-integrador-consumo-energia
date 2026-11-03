@@ -26,7 +26,7 @@ for titulo, cuerpo in secciones:
     with st.container(border=True):
         st.markdown(f"##### {titulo}")
         st.markdown(cuerpo)
-        if titulo.startswith("3."):
+        if titulo.endswith("Datos de entrada en la app"):
             ult = st.session_state.get("pred-ultima")
             st.markdown("**Última predicción: lo que recibió el modelo**")
             if ult:

@@ -28,7 +28,14 @@ SUBMEDIDOR = {
 NOMBRE_SUB = {"sub1": "Cocina", "sub2": "Lavadero, heladera y luces", "sub3": "Termotanque y clima"}
 
 VOLT_DATASET = 240.0  # tensión media medida en el dataset
-COSPHI_TIPICO = 0.95  # factor de potencia típico de un hogar (sin medición propia)
+# Energía reactiva típica del dataset (ya reescalado a un hogar argentino): casi no cambia con el
+# consumo, ronda 1,5 kVArh por día. El cos φ se calcula con ella, como en el entrenamiento.
+REACTIVA_DIA_DATASET = 1.5
+
+
+def version() -> tuple[float, float]:
+    """Fecha de modificación de los dos modelos: si se reentrenan, la app los vuelve a cargar."""
+    return tuple((MODELOS / f).stat().st_mtime for f in ("reg_24h.pkl", "clf_me_paso.pkl"))
 
 
 def cargar() -> tuple[dict, dict]:
@@ -54,14 +61,15 @@ def submedidores(items: list[dict], kwh_dia_item: dict[str, float]) -> dict[str,
 def armar_entrada(*, kwh_dia: float, kwh_hora: float, subs: dict[str, float], fecha: dt.date, hora: int,
                   temp_hoy: float, temp_manana: float, feriado: bool) -> tuple[dict, list[dict]]:
     """Devuelve (fila para el modelo, lista de ajustes aplicados para mostrar en Análisis)."""
-    tan = math.tan(math.acos(COSPHI_TIPICO))
+    reactiva = REACTIVA_DIA_DATASET
+    cosphi = kwh_dia / math.hypot(kwh_dia, reactiva) if kwh_dia > 0 else 0.0
     mes_m = mes_modelo(fecha.month)
     fila = {
         "kwh_h": kwh_hora,
         "active_24": kwh_dia,
         "active_prevweek": kwh_dia,
-        "reactive_24": kwh_dia * tan,
-        "cosphi_24": COSPHI_TIPICO,
+        "reactive_24": reactiva,
+        "cosphi_24": cosphi,
         "sub1_24": subs["sub1"],
         "sub2_24": subs["sub2"],
         "sub3_24": subs["sub3"],
@@ -80,8 +88,8 @@ def armar_entrada(*, kwh_dia: float, kwh_hora: float, subs: dict[str, float], fe
         {"Dato": "Consumo de la semana anterior", "Lo que hay en la app": "—",
          "Lo que recibe el modelo": f"{kwh_dia:.2f} kWh", "Motivo": "No hay historial: se usa el mismo consumo diario"},
         {"Dato": "Energía reactiva y cos φ", "Lo que hay en la app": "—",
-         "Lo que recibe el modelo": f"{kwh_dia * tan:.2f} kVArh · cos φ {COSPHI_TIPICO}",
-         "Motivo": "Sin medidor que la registre: cos φ típico de un hogar"},
+         "Lo que recibe el modelo": f"{reactiva:.2f} kVArh · cos φ {cosphi:.3f}",
+         "Motivo": "Sin medidor que la registre: reactiva típica del dataset (1,5 kVArh por día)"},
         {"Dato": "Voltaje", "Lo que hay en la app": "220 V (red argentina)",
          "Lo que recibe el modelo": f"{VOLT_DATASET:.0f} V", "Motivo": "Sin medición: se usa la media del dataset"},
         {"Dato": "Submedidores", "Lo que hay en la app": "Electrodomésticos de Mi casa",

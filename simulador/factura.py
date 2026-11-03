@@ -181,6 +181,18 @@ def _fecha(d, m, a) -> dt.date | None:
 
 
 def _kwh(t: str) -> tuple[float | None, str]:
+    # 0) Boleta de EDEA: "Total a Facturar: 342" y "Consumo: 342 R" (sin la palabra kWh al lado).
+    #    Va primero porque la boleta también trae el gráfico de períodos anteriores ("533 kWh").
+    for pat in (r"total\s+a\s+facturar\s*:?\s*(\d[\d.]*)\b", r"^\s*consumo\s*:\s*(\d[\d.]*)\s*[a-z]?\s*$"):
+        mt = re.search(pat, t, re.M)
+        if mt:
+            v = numero_ar(mt.group(1))
+            if v and 0 < v <= 4000:
+                return v, "alta"
+    est_act = re.search(r"estado\s+actual\D{0,30}?\d{1,2}/\d{1,2}/\d{2,4}\s*:\s*(\d+)", t)
+    est_ant = re.search(r"estado\s+anterior\D{0,30}?\d{1,2}/\d{1,2}/\d{2,4}\s*:\s*(\d+)", t)
+    if est_act and est_ant and 0 < int(est_act.group(1)) - int(est_ant.group(1)) <= 4000:
+        return float(int(est_act.group(1)) - int(est_ant.group(1))), "media"
     # 1) "Consumo ... 320 kWh"
     for pat in (r"consumo[^\n\d$]{0,40}?(\d[\d.]*(?:,\d+)?)\s*kwh",
                 r"energ[ií]a\s+(?:activa\s+)?consumida[^\n\d$]{0,30}?(\d[\d.]*(?:,\d+)?)",
@@ -240,7 +252,17 @@ def _importe(t: str) -> tuple[float | None, str]:
 
 def _subsidio(t: str) -> tuple[str | None, str]:
     """Situación de la factura: sin subsidio, subsidio nacional (SEF), tarifa social o las dos."""
+    # La boleta de EDEA lo dice en un renglón: "SEGMENTACION N1/NO SEF" o "SEGMENTACION N3/SEF".
+    # Todas traen además la leyenda "consultar por su inclusión en la Tarifa Social", que no cuenta.
+    t = re.sub(r"inclusi[oó]n\s+en\s+la\s+tarifa\s+social", "", t)
     social = re.search(r"tarifa\s+social|\bt\.?\s*social\b", t) is not None
+    seg = re.search(r"segmentaci[oó]n\s*:?\s*n\s*([123])\s*/\s*(no\s*sef|sef)", t)
+    if seg:
+        con_sef = seg.group(2).replace(" ", "") == "sef"
+        if social:
+            return ("tarifa_social_sef" if con_sef else "tarifa_social"), "alta"
+        return ("sef" if con_sef else "sin_subsidio"), "alta"
+    t = re.sub(r"\bno\s*sef\b", "", t)
     sef = re.search(r"\bsef\b|subsidio\s+(?:energ|nacional|del\s+estado\s+nacional)"
                     r"|segmentaci[oó]n\D{0,15}[23]\b|\bnivel\s*[23]\b|\bn[23]\b", t) is not None
     if social and sef:
@@ -254,6 +276,74 @@ def _subsidio(t: str) -> tuple[str | None, str]:
     return None, "no encontrado"
 
 
+MONTO = r"-?\d[\d.]*,\d{2}"
+NUM = r"\d[\d.]*,\d{2,4}"
+NO_CONCEPTO = ("c.f +energia", "c.f + energia", "total a pagar")  # renglones informativos que no suman
+
+
+def _renglon(linea: str) -> dict | None:
+    """'LEY 11769 ART 75 % 6,00 2.483,01' -> {concepto, pct, monto};
+    'CARGO VARIABLE RESIDENC. 171,00 33.647,70' -> {concepto, kwh, monto}."""
+    linea = linea.strip().lstrip("*").strip()
+    mt = re.fullmatch(r"(?P<n>[A-Za-zÁÉÍÓÚÑáéíóúñ][^%]*?)\s*(?:%\s*(?P<p>" + NUM + r")\s+|(?P<k>" + NUM + r")\s+)?"
+                      r"(?P<m>" + MONTO + r")", linea)
+    if not mt or any(x in linea.lower() for x in NO_CONCEPTO):
+        return None
+    r = {"concepto": re.sub(r"\s+", " ", mt["n"]).strip(" .:"), "monto": numero_ar(mt["m"])}
+    if mt["p"]:
+        r["pct"] = numero_ar(mt["p"])
+    if mt["k"]:
+        r["kwh"] = numero_ar(mt["k"])
+    return r
+
+
+def conceptos(texto: str) -> dict | None:
+    """Los renglones de la boleta de EDEA: cargos, subtotal, impuestos y otros (mora, depósitos).
+    Devuelve None si no aparecen o si las sumas no cierran (lectura dudosa, por ejemplo con OCR)."""
+    lineas = texto.replace(chr(13), "").splitlines()
+    cargos, impuestos, otros = [], [], []
+    sub_e = sub_i = total = None
+    parte = None
+    for ln in lineas:
+        low = ln.lower()
+        if parte is None and re.search(r"cargo\s+fijo", low) and re.search(MONTO + r"\s*$", ln):
+            parte = cargos
+        if parte is None:
+            continue
+        if "subtotal" in low and "energ" in low:
+            sub_e, parte = numero_ar(re.findall(MONTO, ln)[-1]), impuestos
+            continue
+        if "subtotal" in low and "impuesto" in low:
+            sub_i, parte = numero_ar(re.findall(MONTO, ln)[-1]), otros
+            continue
+        if re.search(r"total\s+factura", low):
+            total = numero_ar(re.findall(MONTO, ln)[-1]) if re.findall(MONTO, ln) else None
+            break
+        r = _renglon(ln)
+        if r:
+            parte.append(r)
+    if not cargos or sub_e is None or sub_i is None:
+        return None
+    if abs(sum(c["monto"] for c in cargos) - sub_e) > 1 or abs(sum(i["monto"] for i in impuestos) - sub_i) > 1:
+        return None
+    return {"cargos": cargos, "subtotal": sub_e, "impuestos": impuestos, "subtotal_impuestos": sub_i,
+            "otros": otros, "total_factura": total}
+
+
+def historial(texto: str) -> list[dict]:
+    """Gráfico de períodos de la boleta: '533 / kWh / 3/25' -> [{periodo: '3/25', kwh: 533}, ...]."""
+    filas = re.findall(r"^\s*(\d{1,4})\s*\n\s*kwh\s*\n\s*(\d{1,2}/\d{2})\s*$", texto.replace(chr(13), ""), re.M | re.I)
+    return [{"periodo": p, "kwh": int(k)} for k, p in filas] if len(filas) >= 2 else []
+
+
+def tarifas_aplicadas(texto: str) -> list[dict]:
+    """Tabla 'FECHA C. FIJO C. VARIABLE KWH DIAS' de la boleta."""
+    filas = re.findall(r"^\s*(\d{2}/\d{2}/\d{2})\s+(\d+,\d+)\s+(\d+,\d+)\s+(\d+)\s+(\d+)\s*$",
+                       texto.replace(chr(13), ""), re.M)
+    return [{"desde": d, "tramo": "", "cf": numero_ar(cf), "cv": numero_ar(cv), "ctt": None,
+             "kwh": int(k), "dias": int(n)} for d, cf, cv, k, n in filas]
+
+
 def extraer(texto: str, codigos_leidos: list[dict] | None = None) -> dict:
     """Busca consumo (kWh), período, importe total, vencimiento y subsidio. Cada campo trae su
     confianza. Si la foto tenía el QR de factura electrónica, de ahí sale el importe."""
@@ -265,7 +355,7 @@ def extraer(texto: str, codigos_leidos: list[dict] | None = None) -> dict:
     mv = re.search(r"venc\w*\D{0,25}" + FECHA, t)
     venc = _fecha(*mv.groups()) if mv else None
     dias = (hasta - desde).days if desde and hasta else None
-    avisos = []
+    avisos, notas = [], []  # avisos: algo para revisar; notas: información
     for c in codigos_leidos or []:
         qr = qr_arca(c["texto"])
         if qr and qr["importe"]:
@@ -275,15 +365,18 @@ def extraer(texto: str, codigos_leidos: list[dict] | None = None) -> dict:
     if dias is not None and not 25 <= dias <= 65:
         avisos.append(f"El período detectado tiene {dias} días (se esperaban 25 a 65).")
         dias, c_per = None, "dudosa"
-    if dias and dias > 45:
-        avisos.append("Parece una factura bimestral: el tope bonificado se prorratea por los días del período.")
+    mc = re.search(r"cuota\s*(\d)\s*de\s*(\d)", t)
+    cuotas = int(mc.group(2)) if mc and int(mc.group(2)) in (1, 2) else 1
+    mr = re.search(r"cuadro\s+tarifario\s+(res[^\n]{0,30}?\d+\s*/\s*\d{2,4})", t)
     return {
         "kwh": kwh, "kwh_conf": c_kwh,
         "desde": desde, "hasta": hasta, "dias": dias, "periodo_conf": c_per,
         "importe": importe, "importe_conf": c_imp,
         "vencimiento": venc, "escenario": esc, "escenario_conf": c_esc,
+        "cuotas": cuotas, "cuadro": mr.group(1).upper() if mr else None, "conceptos": conceptos(texto),
+        "historial": historial(texto), "tarifas": tarifas_aplicadas(texto),
         # De los códigos solo queda el formato: su texto puede traer DNI/CUIT del titular.
-        "codigos": [c["formato"] for c in codigos_leidos or []], "avisos": avisos,
+        "codigos": [c["formato"] for c in codigos_leidos or []], "avisos": avisos, "notas": notas,
     }
 
 

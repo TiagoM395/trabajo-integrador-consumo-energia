@@ -157,6 +157,7 @@ Archivos: [`tarifas_edea.csv`](tarifas_edea.csv) (30 filas: 4 situaciones × tra
 | Tarifa social + SEF | Anexo 68 — Tarifa Social Grupo 1 y beneficiaria del SEF | https://oceba.gba.gov.ar/nueva_web/adjuntos/ct202609/IF-2026-27790623-GDEBA-GMOCEBA.pdf |
 | Cargo Transición Tarifaria | Anexo 87 — CTT ($/kWh) | https://oceba.gba.gov.ar/nueva_web/adjuntos/ct202609/IF-2026-27797883-GDEBA-GMOCEBA.pdf |
 | Impuestos | Tabla "Impuestos y FPCT" del OCEBA (revisada el 31/01/2026) | https://oceba.gba.gov.ar/nueva_web/s.php?i=19 |
+| Ley 10740 (18 %) | No figura en la tabla del OCEBA. Sale de 9 boletas reales de EDEA de 2026 (dos hogares, T1R, segmentación N1 y N3/SEF): el renglón «LEY 10740» es siempre el 18 % exacto del subtotal | Boletas reales revisadas; no se guardan en el proyecto porque tienen datos personales |
 
 **Cómo se calcula la factura** (igual que en el CSV):
 1. El **tramo** (R1 a R7) se elige por el consumo total del mes.
@@ -166,12 +167,19 @@ Archivos: [`tarifas_edea.csv`](tarifas_edea.csv) (30 filas: 4 situaciones × tra
    "primeros 150" del anexo y el resto al precio del tramo; se resta la bonificación fija.
 4. + Cargo Transición Tarifaria: 17,506 $/kWh (residencial), 7,445 $/kWh (primeros 150 kWh SEF),
    2,987 $/kWh (tarifa social).
-5. + Impuestos sobre el subtotal: 36,501 % (residencial) o 32,511 % (tarifa social, que paga 0,01 %
-   del Decreto-Ley 7290 en lugar del 4 %, Res. MIySP 771/24 art. 52).
+5. + Impuestos sobre el subtotal, en el orden de la boleta: IVA 21 %, Ley 10740 18 %, Ley 11769
+   art. 74 0,001 %, art. 75 6 %, Fondo Provincial de Compensaciones 5,5 % y Decreto-Ley 7290. En
+   total: **54,501 %** sin subsidio y **50,511 %** con subsidio nacional (SEF) o tarifa social, que
+   pagan 0,01 % del Decreto-Ley 7290 en lugar del 4 % (Res. MIySP 771/24 art. 52; también se ve en las
+   boletas con segmentación N3/SEF). Comprobado con las boletas reales: los impuestos calculados
+   coinciden al centavo con los de la factura (por ejemplo, $ 22.554,45 sobre un subtotal de
+   $ 41.383,55).
 
 **Simplificaciones (declaradas):**
-- Todos los impuestos se aplican sobre el mismo subtotal; en la factura real algunas bases pueden
-  diferir y la tasa municipal (Ley 11769 art. 75) depende del municipio.
+- Todos los impuestos se aplican sobre el mismo subtotal, como en las boletas revisadas; la tasa
+  municipal (Ley 11769 art. 75) puede depender del municipio.
+- Para la tarifa social se supone la misma Ley 10740 (18 %); no se revisó ninguna boleta con tarifa
+  social.
 - No incluye otros conceptos que pueden aparecer en la factura (tasas municipales de alumbrado,
   intereses, cargos de reconexión).
 - La tarifa social modelada es la del **Grupo 1**.
@@ -192,4 +200,4 @@ ejemplo en `simulador/datos/datos.json` y en las pruebas; la app usa el cuadro r
 |---|---|
 | UCI — Individual Household Electric Power Consumption (hogar de Sceaux, Francia, 2006–2010) | https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption |
 | `clima_sceaux.csv` (temperatura diaria 2006–2011 del mismo lugar, en la carpeta del proyecto) | Open-Meteo Historical Weather API — https://open-meteo.com/ (punto lat 48,78, lon 2,29) |
-| UCI — Individual Household Electric Power Consumption | [`entrenamiento_modelos.py`](../entrenamiento_modelos.py) descarga y prepara la fuente para el notebook reproducible [`entrenamiento_modelos.ipynb`](../notebooks/entrenamiento_modelos.ipynb); la evaluación está en [`README_ANALISIS.md`](../explicaciones/README_ANALISIS.md). Los `.pkl` de producción son artefactos ya entrenados y no se sobrescriben al ejecutar el notebook. |
+| UCI — Individual Household Electric Power Consumption | Archivo local `datos/crudos/household_power_consumption.txt` (133 MB, no se sube al repositorio; si falta, [`entrenamiento_modelos.py`](../entrenamiento_modelos.py) lo descarga de UCI). El script reescala la energía × 0,514 a un hogar argentino, entrena, evalúa y guarda los `.pkl` de `modelos/`; el notebook [`entrenamiento_modelos.ipynb`](../notebooks/entrenamiento_modelos.ipynb) muestra la misma corrida. La evaluación está en [`README_ANALISIS.md`](../explicaciones/README_ANALISIS.md). |

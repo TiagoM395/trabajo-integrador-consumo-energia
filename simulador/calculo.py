@@ -220,11 +220,27 @@ ESCENARIOS_EDEA = {
 }
 
 
+RUTA_IMPUESTOS = Path(__file__).parents[1] / "datos" / "impuestos_residenciales.csv"
+# Columna de datos/impuestos_residenciales.csv que corresponde a cada situación.
+COLUMNA_IMPUESTOS = {"sin_subsidio": "alicuota_pct_residencial", "sef": "alicuota_pct_sef",
+                     "tarifa_social": "alicuota_pct_tarifa_social", "tarifa_social_sef": "alicuota_pct_tarifa_social"}
+
+
+def _impuestos_por_escenario() -> dict[str, list[tuple[str, float]]]:
+    """Cada impuesto con su alícuota (%) para cada situación, en el orden del archivo."""
+    import csv
+
+    with open(RUTA_IMPUESTOS, encoding="utf-8") as f:
+        filas = list(csv.DictReader(f))
+    return {esc: [(r["concepto"], float(r[col])) for r in filas] for esc, col in COLUMNA_IMPUESTOS.items()}
+
+
 @lru_cache(maxsize=1)
 def tarifas_edea() -> dict:
     """Cuadro tarifario residencial vigente de EDEA, leído de datos/tarifas_edea.csv."""
     import csv
 
+    impuestos = _impuestos_por_escenario()
     escenarios: dict = {}
     with open(RUTA_TARIFAS, encoding="utf-8") as f:
         filas = list(csv.DictReader(f))
@@ -232,6 +248,7 @@ def tarifas_edea() -> dict:
         e = escenarios.setdefault(r["escenario"], {
             **ESCENARIOS_EDEA.get(r["escenario"], {"nombre": r["escenario"], "corto": r["escenario"], "icono": "", "desc": ""}),
             "tramos": [], "impuestos_pct": float(r["impuestos_pct"]), "anexo": r["anexo"], "fuente_url": r["fuente_url"],
+            "impuestos": impuestos.get(r["escenario"], []),
         })
         e["tramos"].append({
             "tramo": r["tramo"], "desde": float(r["desde_kwh"]),
@@ -271,6 +288,42 @@ def _factura_edea(kwh: float, esc: dict) -> dict:
         "subtotal": subtotal, "impuestos": impuestos, "total": total, "efectivo": total / kwh if kwh > 0 else 0.0,
         "tope": t["bloque_kwh"] or None, "dentro": bloque, "fuera": resto if t["bloque_kwh"] > 0 else 0.0,
     }
+
+
+SUBSIDIO_NOMBRE = {"sef": "Subsidio Estado Nacional", "tarifa_social": "Tarifa social provincial",
+                   "tarifa_social_sef": "Tarifa social + subsidio nacional"}
+
+
+def detalle_factura(kwh: float, tarifas: dict, esc_id: str) -> dict:
+    """La factura del mes renglón por renglón, como la boleta de EDEA.
+
+    Cargos: cargo fijo del tramo, cargo variable y Cargo Transición Tarifaria a precio pleno, y,
+    si hay subsidio, su descuento (más la bonificación fija de la tarifa social). Después, cada
+    impuesto con su alícuota sobre el subtotal. La suma da exactamente factura()["total"].
+    """
+    e = tarifas["escenarios"][esc_id]
+    f = _factura_edea(max(0.0, kwh), e)
+    t = tramo_de(f["kwh"], e["tramos"])
+    k = f["kwh"]
+    energia_pleno, ctt_pleno = k * t["cargo_variable"], k * t["ctt"]
+    cargos = [
+        {"concepto": f"Cargo fijo (tramo {t['tramo']})", "detalle": "por mes, aunque no consumas", "monto": f["cargo_fijo"]},
+        {"concepto": "Cargo variable", "kwh": k, "precio": t["cargo_variable"], "monto": energia_pleno},
+        {"concepto": "Cargo Transición Tarifaria", "kwh": k, "precio": t["ctt"], "monto": ctt_pleno},
+    ]
+    subsidio = energia_pleno + ctt_pleno - f["energia"] - f["ctt"]
+    if abs(subsidio) > 0.005:
+        bloque = f"primeros {fmt_kwh(f['dentro'])} kWh a precio reducido" if f["dentro"] else "precio reducido por kWh"
+        cargos.append({"concepto": SUBSIDIO_NOMBRE.get(esc_id, "Subsidio"), "detalle": bloque, "monto": -subsidio})
+    if f["bonificacion"]:
+        cargos.append({"concepto": "Bonificación tarifa social", "detalle": "descuento fijo por mes",
+                       "monto": -f["bonificacion"]})
+    impuestos = [{"concepto": n, "pct": p, "monto": f["subtotal"] * p / 100} for n, p in e.get("impuestos", []) if p > 0]
+    return {"factura": f, "cargos": cargos, "impuestos": impuestos}
+
+
+def fmt_kwh(v: float) -> str:
+    return f"{v:,.0f}".replace(",", ".")
 
 
 # Casa de referencia para el precio fijo de Mi casa: 300 kWh por mes, en el medio del tramo R3

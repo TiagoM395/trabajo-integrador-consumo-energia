@@ -7,10 +7,13 @@ import numpy as np
 import pandas as pd
 
 from entrenamiento_modelos import (
+    FACTOR_ESCALA,
     FEATURES,
+    MEDIANA_ORIGINAL_KWH,
     META_KWH,
     build_dataset,
     chronological_split,
+    escalar_a_hogar_argentino,
 )
 
 
@@ -60,6 +63,19 @@ class TestEntrenamientoModelos(unittest.TestCase):
             int(first["target_kwh_next24"] > META_KWH),
         )
         self.assertEqual(first["temp_actual"], first["temp_next24"])
+
+    def test_escalado_lleva_la_mediana_original_a_la_meta_argentina(self):
+        self.assertAlmostEqual(META_KWH, 400 / 30)
+        self.assertAlmostEqual(MEDIANA_ORIGINAL_KWH * FACTOR_ESCALA, META_KWH)
+        hourly = pd.DataFrame(
+            {"active": [2.0], "reactive": [0.5], "voltage": [240.0],
+             "sub1": [0.1], "sub2": [0.2], "sub3": [0.3]}
+        )
+        scaled = escalar_a_hogar_argentino(hourly)
+        for column in ("active", "reactive", "sub1", "sub2", "sub3"):
+            self.assertAlmostEqual(scaled[column][0], hourly[column][0] * FACTOR_ESCALA)
+        self.assertEqual(scaled["voltage"][0], 240.0)
+        self.assertEqual(hourly["active"][0], 2.0)  # el original no se modifica
 
     def test_chronological_split_purges_target_window_overlap(self):
         samples = pd.DataFrame(index=pd.Index(range(1000), name="hour_id"))

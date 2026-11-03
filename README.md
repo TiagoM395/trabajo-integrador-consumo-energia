@@ -41,7 +41,7 @@ Los dos modelos de aprendizaje automático del paso 4 tienen su propio README:
 
 | Modelo | Archivo | Explicación detallada |
 |---|---|---|
-| **Regresión** (KNN k=25): cuántos kWh vas a usar en las próximas 24 h | [`modelos/reg_24h.pkl`](modelos/reg_24h.pkl) | [`README_MODELO_REGRESION.md`](explicaciones/README_MODELO_REGRESION.md) |
+| **Regresión** (KNN k=50): cuántos kWh vas a usar en las próximas 24 h | [`modelos/reg_24h.pkl`](modelos/reg_24h.pkl) | [`README_MODELO_REGRESION.md`](explicaciones/README_MODELO_REGRESION.md) |
 | **Clasificación** (GaussianNB): ¿te pasás de la meta, sí o no? | [`modelos/clf_me_paso.pkl`](modelos/clf_me_paso.pkl) | [`README_MODELO_CLASIFICACION.md`](explicaciones/README_MODELO_CLASIFICACION.md) |
 
 Arriba de *Mi casa*, *Ambiente 3D* y *Factura* aparece el recuadro **Resumen de tu casa**: consumo
@@ -72,16 +72,28 @@ del mes, lo que pagarías, el ahorro con subsidio y el consumo en espera.
 | Siempre encendido | Router | potencia × 24 h × 30 |
 
 La **factura** se arma con el cuadro tarifario oficial de EDEA (tramos R1 a R7, cargo fijo, Cargo
-Transición Tarifaria e impuestos). El subsidio cambia el **precio**, no los kWh. La plata de cada
-electrodoméstico es su parte de la factura: kWh del equipo × (total de la factura ÷ kWh de la casa).
+Transición Tarifaria e impuestos: IVA 21 %, Ley 10740 18 % y tasas provinciales y municipales, 54,5 % en
+total sin subsidio). En el paso 3 de *Mi casa* la factura aparece renglón por renglón, como la boleta.
+El subsidio cambia el **precio**, no los kWh. La plata de cada
+electrodoméstico vale sus kWh × el precio promedio del kWh (el de una casa típica de 300 kWh, con impuestos).
 
 **Predicción (paso 4 de Mi casa).** La app **carga** los modelos ya entrenados (no entrena nada) y
 arma sus 16 variables con lo que cargaste en la casa o en la factura:
 
 | Modelo | Qué responde | Resultado en prueba |
 |---|---|---|
-| Regresión: KNN k=25 (StandardScaler en un Pipeline) | ¿Cuántos kWh vas a usar en las próximas 24 h? | Prueba reproducible: MAE 4,557 kWh · R² 0,304 |
-| Clasificación: GaussianNB | ¿Te pasás de la meta diaria (25,9 kWh)? | Prueba reproducible: accuracy 0,738 · recall 0,700 |
+| Regresión: KNN k=50 (StandardScaler en un Pipeline) | ¿Cuántos kWh vas a usar en las próximas 24 h? | Prueba reproducible: MAE 2,249 kWh · R² 0,371 |
+| Clasificación: GaussianNB | ¿Te pasás de la meta diaria (13,3 kWh)? | Prueba reproducible: accuracy 0,738 · recall 0,700 |
+
+**La meta: 13,3 kWh por día = 400 kWh por mes.** Es el límite del tramo R3 del cuadro tarifario de
+EDEA ([Res. MIySP N° 682/2026](https://oceba.gba.gov.ar/nueva_web/adjuntos/ct202609/IF-2026-27778457-GDEBA-GMOCEBA.pdf)):
+por encima, la factura pasa al tramo R4 y cada kWh sale más caro.
+
+**El dataset, llevado a un hogar argentino.** Los modelos aprendieron de un hogar de Francia que
+consume unos 786 kWh por mes (mediana de 25,92 kWh por día). Para entrenar, todo su consumo se
+multiplicó por **0,514** (13,33 ÷ 25,92): así la mitad de sus días supera la meta de 13,3 kWh, como
+pasaba con el hogar original y su propia mediana. Detalle en
+[`README_ANALISIS.md`](explicaciones/README_ANALISIS.md), sección 3.
 
 El resultado es un semáforo: 🟢 no te pasás · 🟡 estás cerca o los modelos no se ponen de acuerdo
 · 🔴 te pasás. Cómo se prepararon los datos y se entrenaron los modelos está en la pestaña
@@ -98,7 +110,8 @@ evaluación se pueden repetir en el [notebook](notebooks/entrenamiento_modelos.i
 | [`simulador/variantes.py`](simulador/variantes.py) | Variantes de cada electrodoméstico y su valor estándar | Mediana de modelos reales del dataset de eficiencia (heladera, freezer, aire, TV) o valor típico (el resto) |
 | [`datos/tarifas_edea.csv`](datos/tarifas_edea.csv) y [`datos/impuestos_residenciales.csv`](datos/impuestos_residenciales.csv) | Cuadro tarifario residencial oficial de EDEA e impuestos | [OCEBA — Res. MIySP 682/2026](https://oceba.gba.gov.ar/nueva_web/s.php?i=17) |
 | [`datos/electrodomesticos_eficiencia.csv`](datos/electrodomesticos_eficiencia.csv) | 15.342 modelos reales con su consumo de etiqueta | [data.gov.au — Energy Rating](https://data.gov.au/data/dataset/energy-rating-for-household-appliances) (CC BY 3.0 AU) |
-| [`modelos/`](modelos/) | Pipelines entrenados de regresión y clasificación | Dataset UCI *Individual Household Electric Power Consumption* (CC BY 4.0) |
+| [`modelos/`](modelos/) | Pipelines entrenados de regresión y clasificación (los genera `entrenamiento_modelos.py`) | Dataset UCI *Individual Household Electric Power Consumption* (CC BY 4.0), reescalado × 0,514 |
+| `datos/crudos/household_power_consumption.txt` | El dataset UCI completo: 2.075.259 mediciones por minuto (133 MB, no se sube al repositorio) | [UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/235/individual+household+electric+power+consumption) |
 | [`clima_sceaux.csv`](clima_sceaux.csv) | Temperatura diaria 2006–2011 del hogar del dataset (Sceaux, Francia) | Open-Meteo, usada para entrenar los modelos |
 
 Todas las fuentes, con enlaces, columnas usadas y limitaciones: [`datos/FUENTES.md`](datos/FUENTES.md).
@@ -134,8 +147,8 @@ datos/                        ← tarifas, impuestos, dataset de eficiencia, scr
 tests/
   test_calculo.py             ← pruebas del cálculo y de la factura de EDEA
   test_factura.py             ← pruebas de la lectura de facturas (texto, QR y subsidio)
-  test_entrenamiento_modelos.py ← pruebas de ventanas objetivo y partición temporal
-entrenamiento_modelos.py      ← preparación de datos y comparación de modelos
+  test_entrenamiento_modelos.py ← pruebas de ventanas objetivo, partición temporal y reescalado
+entrenamiento_modelos.py      ← preparación, reescalado, comparación de modelos y guardado en modelos/
 notebooks/
   entrenamiento_modelos.ipynb ← notebook reproducible de entrenamiento y evaluación
 .streamlit/config.toml        ← tema claro/oscuro y límite de subida de 10 MB
@@ -162,7 +175,7 @@ abrir_simulador.bat           ← abre la app con doble clic (Windows)
 
 ## 7. Verificación
 
-23 pruebas automáticas (`python -m unittest discover -s tests -v`), entre ellas los ejemplos de la
+26 pruebas automáticas (`python -m unittest tests/test_calculo.py tests/test_factura.py tests/test_entrenamiento_modelos.py -v`), entre ellas los ejemplos de la
 propuesta:
 
 | Ejemplo | Esperado | Resultado |
@@ -170,7 +183,8 @@ propuesta:
 | 5.2 — enero (4 electrodomésticos) | 296,4 kWh | 296,4 kWh ✅ |
 | 5.2 — año | 2.392,1 kWh | 2.392,1 kWh ✅ |
 | 6.3 — 400 kWh sin subsidio / nacional / provincial | $ 78.650 / 53.240 / 45.617 | iguales ✅ |
-| Factura de EDEA, 273 kWh sin subsidio | $ 103.118 (cuenta a mano) | igual ✅ |
+| Factura de EDEA, 273 kWh sin subsidio | $ 116.716 (cuenta a mano, impuestos 54,501 %) | igual ✅ |
+| Impuestos de una boleta real (subtotal $ 41.383,55) | $ 22.554,45 | igual ✅ |
 
 ---
 
@@ -178,10 +192,9 @@ propuesta:
 
 - **Horas de uso y valores típicos:** el cálculo depende de lo que se carga. Para comparar con la
   realidad está la factura.
-- **Modelos:** aprendieron de **un solo hogar** (Sceaux, Francia, 2006–2010). La meta de 25,9 kWh
-  por día es alta para muchos hogares de acá. Algunos datos que piden los modelos (voltaje, energía
-  reactiva, consumo de la semana anterior) se completan con valores típicos; están listados en
-  *Análisis*, sección 3.
+- **Modelos:** las mejoras pendientes (verano con aire, más hogares, feriados argentinos, historial
+  de la casa) están en [`README_ANALISIS.md`](explicaciones/README_ANALISIS.md) y en la sección 3 de
+  [`README_PENDIENTES.md`](README_PENDIENTES.md).
 - **Tarifas:** cuadro oficial de EDEA para consumos desde el 1/9/2026. Cuando salga uno nuevo, se
   regeneran con `python datos/preparar_tarifas.py`.
 - **Valores estándar:** los de heladera, freezer, aire y TV vienen del registro de Australia y Nueva

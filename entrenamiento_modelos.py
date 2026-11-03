@@ -3,9 +3,10 @@
 Uso:
     python entrenamiento_modelos.py
 
-El dataset UCI se descarga en la caché del usuario. No se modifica ningún modelo
-usado por la aplicación; el módulo informa la evaluación y conserva los candidatos
-en memoria para que el notebook pueda inspeccionarlos.
+El dataset UCI se lee de datos/crudos/household_power_consumption.txt; si no está, se
+descarga en la caché del usuario. El consumo del hogar se reescala a un hogar argentino
+de 400 kWh por mes (ver FACTOR_ESCALA). El script informa la evaluación y guarda en
+modelos/ el regresor y el clasificador elegidos en validación, que son los que usa la app.
 """
 from __future__ import annotations
 
@@ -42,8 +43,18 @@ UCI_URL = (
 )
 CACHE = Path.home() / ".cache" / "trabajo-consumo-energia"
 DATASET_FILE = "household_power_consumption.txt"
+LOCAL_DATASET = ROOT / "datos" / "crudos" / DATASET_FILE
+MODELS_DIR = ROOT / "modelos"
 WEATHER_PATH = ROOT / "clima_sceaux.csv"
-META_KWH = 25.917658045475125
+# Mediana del consumo diario del hogar original (Sceaux, Francia): 25,92 kWh por día.
+MEDIANA_ORIGINAL_KWH = 25.917658045475125
+# Meta argentina: 400 kWh por mes, límite del tramo R3 del cuadro tarifario de EDEA
+# (Res. MIySP N° 682/2026). En un día: 400 / 30 = 13,33 kWh.
+META_KWH = 400 / 30
+# Todo el consumo del hogar se multiplica por este factor (≈ 0,514): la mediana diaria pasa
+# de 25,92 a 13,33 kWh y la meta sigue siendo la mediana (mitad de los días por encima).
+FACTOR_ESCALA = META_KWH / MEDIANA_ORIGINAL_KWH
+ENERGY_COLUMNS = ("active", "reactive", "sub1", "sub2", "sub3")
 FALSE_NEGATIVE_COST = 3
 FALSE_POSITIVE_COST = 1
 MINUTES_PER_HOUR = 45
@@ -106,62 +117,69 @@ def _download_archive() -> bytes:
     return cached.read_bytes()
 
 
+def _open_dataset(archive: bytes | None):
+    """Open the local UCI text file if present; otherwise the (downloaded) ZIP archive."""
+    if archive is None and LOCAL_DATASET.is_file():
+        return open(LOCAL_DATASET, "rb")
+    archive = archive if archive is not None else _download_archive()
+    zipped = zipfile.ZipFile(io.BytesIO(archive))
+    if DATASET_FILE not in zipped.namelist():
+        raise ValueError(f"No se encontró {DATASET_FILE} en el archivo UCI.")
+    return zipped.open(DATASET_FILE)
+
+
 def load_raw_data(archive: bytes | None = None) -> tuple[pd.DataFrame, dict]:
     """Read UCI in chunks, aggregate it to hours, and audit raw data quality."""
-    archive = archive if archive is not None else _download_archive()
     sums_and_counts = None
     raw_rows = missing_cells = invalid_timestamps = duplicate_timestamps = 0
     impossible_rows = 0
-    with zipfile.ZipFile(io.BytesIO(archive)) as zipped:
-        if DATASET_FILE not in zipped.namelist():
-            raise ValueError(f"No se encontró {DATASET_FILE} en el archivo UCI.")
-        with zipped.open(DATASET_FILE) as source:
-            chunks = pd.read_csv(
-                source,
-                sep=";",
-                usecols=["Date", "Time", *RAW_COLUMNS],
-                na_values=["?"],
-                low_memory=False,
-                chunksize=100_000,
+    with _open_dataset(archive) as source:
+        chunks = pd.read_csv(
+            source,
+            sep=";",
+            usecols=["Date", "Time", *RAW_COLUMNS],
+            na_values=["?"],
+            low_memory=False,
+            chunksize=100_000,
+        )
+        measurements = list(RAW_COLUMNS)
+        for chunk in chunks:
+            raw_rows += len(chunk)
+            chunk[measurements] = chunk[measurements].apply(pd.to_numeric, errors="coerce")
+            missing_cells += int(chunk[measurements].isna().sum().sum())
+            clock = np.fromiter(
+                (_hour_key(d, t) for d, t in zip(chunk["Date"], chunk["Time"])),
+                dtype=np.int64,
+                count=len(chunk),
             )
-            measurements = list(RAW_COLUMNS)
-            for chunk in chunks:
-                raw_rows += len(chunk)
-                chunk[measurements] = chunk[measurements].apply(pd.to_numeric, errors="coerce")
-                missing_cells += int(chunk[measurements].isna().sum().sum())
-                clock = np.fromiter(
-                    (_hour_key(d, t) for d, t in zip(chunk["Date"], chunk["Time"])),
-                    dtype=np.int64,
-                    count=len(chunk),
-                )
-                chunk.index = clock
-                invalid_timestamps += int((chunk.index < 0).sum())
-                chunk = chunk.loc[chunk.index >= 0]
-                duplicate_rows = chunk.duplicated(
-                    subset=["Date", "Time", *measurements], keep="last"
-                )
-                duplicate_timestamps += int(duplicate_rows.sum())
-                chunk = chunk.loc[~duplicate_rows]
-                impossible = (
-                    (chunk["Global_active_power"] < 0)
-                    | (chunk["Global_active_power"] > 15)
-                    | (chunk["Global_reactive_power"] < 0)
-                    | (chunk["Voltage"] <= 0)
-                    | (
-                        chunk[
-                            ["Sub_metering_1", "Sub_metering_2", "Sub_metering_3"]
-                        ]
-                        < 0
-                    ).any(axis=1)
-                )
-                impossible_rows += int(impossible.sum())
-                chunk.loc[impossible, measurements] = np.nan
-                hourly = chunk.groupby(chunk.index)[measurements].agg(["sum", "count"])
-                sums_and_counts = (
-                    hourly
-                    if sums_and_counts is None
-                    else sums_and_counts.add(hourly, fill_value=0)
-                )
+            chunk.index = clock
+            invalid_timestamps += int((chunk.index < 0).sum())
+            chunk = chunk.loc[chunk.index >= 0]
+            duplicate_rows = chunk.duplicated(
+                subset=["Date", "Time", *measurements], keep="last"
+            )
+            duplicate_timestamps += int(duplicate_rows.sum())
+            chunk = chunk.loc[~duplicate_rows]
+            impossible = (
+                (chunk["Global_active_power"] < 0)
+                | (chunk["Global_active_power"] > 15)
+                | (chunk["Global_reactive_power"] < 0)
+                | (chunk["Voltage"] <= 0)
+                | (
+                    chunk[
+                        ["Sub_metering_1", "Sub_metering_2", "Sub_metering_3"]
+                    ]
+                    < 0
+                ).any(axis=1)
+            )
+            impossible_rows += int(impossible.sum())
+            chunk.loc[impossible, measurements] = np.nan
+            hourly = chunk.groupby(chunk.index)[measurements].agg(["sum", "count"])
+            sums_and_counts = (
+                hourly
+                if sums_and_counts is None
+                else sums_and_counts.add(hourly, fill_value=0)
+            )
 
     if sums_and_counts is None:
         raise ValueError("El dataset UCI no contiene mediciones utilizables.")
@@ -230,6 +248,16 @@ def _hourly_data(raw: pd.DataFrame) -> pd.DataFrame:
     if not expected.issubset(raw.columns):
         raise ValueError(f"Faltan columnas horarias: {sorted(expected - set(raw.columns))}")
     return raw.sort_index()
+
+
+def escalar_a_hogar_argentino(raw: pd.DataFrame, factor: float = FACTOR_ESCALA) -> pd.DataFrame:
+    """Multiply every energy column by ``factor`` so the household consumes like an
+    Argentine one (400 kWh per month at the median). Voltage is not energy and stays;
+    the power factor (cos φ) does not change because active and reactive scale alike."""
+    scaled = raw.copy()
+    for column in ENERGY_COLUMNS:
+        scaled[column] = scaled[column] * factor
+    return scaled
 
 
 def build_dataset(
@@ -304,6 +332,7 @@ def build_dataset(
         ),
         "Filas supervisadas descartadas (historial/objetivo/clima incompletos)": dropped,
         "Casos supervisados finales": len(samples),
+        "Factor de escala aplicado al consumo": FACTOR_ESCALA,
         "Umbral de exceso (kWh/24 h)": META_KWH,
         "Proporción de excesos": float(samples["target_exceso"].mean()),
     }
@@ -393,7 +422,7 @@ def _classification_metrics(y_true: pd.Series, predictions: np.ndarray) -> dict:
 def run_experiment() -> dict:
     """Fit all required candidates and evaluate them on common chronological cases."""
     raw, raw_audit = load_raw_data()
-    samples, sample_audit = build_dataset(raw)
+    samples, sample_audit = build_dataset(escalar_a_hogar_argentino(raw))
     splits = chronological_split(samples)
     x_train = splits["entrenamiento"][FEATURES]
     x_validation = splits["validación"][FEATURES]
@@ -522,8 +551,46 @@ def run_experiment() -> dict:
     }
 
 
+def _short_name(name: str) -> str:
+    """'KNeighborsRegressor (k=50)' -> 'KNN k=50'; 'DecisionTree... (profundidad=6)' -> 'Árbol profundidad=6'."""
+    detail = name[name.find("(") + 1 : name.rfind(")")] if "(" in name else ""
+    if name.startswith("KNeighbors"):
+        return f"KNN {detail}"
+    if name.startswith("DecisionTree"):
+        return f"Árbol {detail}"
+    return name
+
+
+def guardar_modelos(result: dict, directory: Path = MODELS_DIR) -> None:
+    """Save the regressor and classifier chosen in validation, in the format the app reads."""
+    import joblib
+
+    directory.mkdir(exist_ok=True)
+    reg_name, clf_name = result["best_regression"], result["best_classifier"]
+    reg_test = result["regression_test"].loc[reg_name]
+    common = {"features": FEATURES, "meta": META_KWH, "factor_escala": FACTOR_ESCALA}
+    joblib.dump(
+        {
+            "modelo": result["models_regression"][reg_name],
+            "nombre": _short_name(reg_name),
+            "mae": float(reg_test["MAE (kWh)"]),
+            "rmse": float(reg_test["RMSE (kWh)"]),
+            **common,
+        },
+        directory / "reg_24h.pkl",
+    )
+    joblib.dump(
+        {"modelo": result["models_classification"][clf_name], "nombre": _short_name(clf_name), **common},
+        directory / "clf_me_paso.pkl",
+    )
+
+
 def main() -> None:
     result = run_experiment()
+    guardar_modelos(result)
+    print(
+        f"Modelos guardados en {MODELS_DIR}: {result['best_regression']} y {result['best_classifier']}"
+    )
     for heading, key in (
         ("Auditoría del dataset original", "raw_audit"),
         ("Preparación y objetivo", "sample_audit"),

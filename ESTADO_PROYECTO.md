@@ -37,23 +37,24 @@ entrena nuevamente:
 
 | Modelo | Uso | Métricas documentadas |
 |---|---|---|
-| KNN con `StandardScaler` (k = 25) | Estimar el consumo de las próximas 24 horas | MAE: 4,57 kWh; R²: 0,31 |
-| GaussianNB | Clasificar si se supera la meta diaria de aproximadamente 25,9 kWh | Exactitud: 0,74; recall: 0,63 |
+| KNN con `StandardScaler` (k = 50) | Estimar el consumo de las próximas 24 horas | MAE: 2,25 kWh; R²: 0,37 |
+| GaussianNB | Clasificar si se supera la meta diaria de 13,3 kWh (400 kWh por mes, tramo R3 de EDEA) | Exactitud: 0,74; recall: 0,70 |
 
-Las métricas disponibles son referencias del proceso de evaluación descrito en la documentación.
-En el repositorio no está el flujo de entrenamiento completo ni información suficiente para
-reproducir esa evaluación de forma independiente.
+Los dos modelos los genera `python entrenamiento_modelos.py`, que entrena con el dataset UCI
+reescalado a un hogar argentino (× 0,514) y guarda en `modelos/` los elegidos en validación. La
+evaluación completa está en [`explicaciones/README_ANALISIS.md`](explicaciones/README_ANALISIS.md).
 
 ### Limitaciones principales de la predicción
 
 1. Los modelos se entrenaron con mediciones de **un solo hogar de Sceaux, Francia**, entre 2006
-   y 2010. No representan una muestra de hogares argentinos.
+   y 2010, reescaladas al nivel de consumo de un hogar argentino. No representan una muestra de
+   hogares argentinos.
 2. La entrada imputa variables que la aplicación no mide: historial de la semana anterior,
    energía reactiva, factor de potencia y voltaje. Las temperaturas se ingresan manualmente.
-3. La meta diaria se basa en el hogar de referencia y puede ser alta para muchas viviendas.
-4. El clasificador recibe actualmente un factor de potencia fijo de **0,95**. El proyecto
-   documenta que este supuesto puede hacer que responda “no te pasás” incluso en situaciones de
-   exceso; por eso, su clasificación y el semáforo combinado requieren cautela.
+3. En Francia el verano es la época de menor consumo: en verano el modelo tiende a estimar menos
+   de lo que consume una casa argentina con aire acondicionado.
+4. La energía reactiva y el cos φ se completan con el valor típico del dataset (1,5 kVArh por
+   día); la app todavía no estima el cos φ propio de cada casa.
 5. El error medio de la regresión es relevante cerca de la meta, y se documenta que puede
    sobreestimar consumos muy bajos.
 

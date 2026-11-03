@@ -11,13 +11,6 @@ r = E.resultados()
 ef = E.efectivo(r)
 
 
-def _cambiar_ambiente():
-    valor = st.session_state.get("amb-sel")
-    if valor in E.AMB:
-        s["ambiente"] = valor
-        s["seleccion"] = None
-
-
 def _mover_a(uid: str):
     inst = E.buscar(uid)
     destino = st.session_state[f"mover-{uid}"]
@@ -25,7 +18,6 @@ def _mover_a(uid: str):
         inst["amb"], inst["rot"] = destino, 0
         E.ubicar(inst)
         s["ambiente"] = destino
-        st.session_state["amb-sel"] = destino
 
 
 def _agregar_mueble(tipo: str):
@@ -60,66 +52,59 @@ def _seleccionar(key):
 
 if s.get("ambiente") not in E.AMB:
     s["ambiente"] = "living"
-if st.session_state.get("amb-sel") not in E.AMB:
-    st.session_state["amb-sel"] = s["ambiente"]
-st.space("small")
-# El texto de cada opción es fijo: si cambiara (por ejemplo, con la cantidad de artefactos),
-# Streamlit podría perder la relación entre el texto y el valor.
-st.segmented_control(
-    "Ambiente", [a["id"] for a in E.D["AMBIENTES"]], key="amb-sel", required=True, label_visibility="collapsed",
-    format_func=lambda a: f"{E.AMB[a]['icono']} {E.AMB[a]['nombre']}" if a in E.AMB else str(a),
-    on_change=_cambiar_ambiente,
-)
+# La pantalla tiene 3 partes que encajan al hacer scroll (estilos en ui.py):
+# 1) navbar y resumen de la casa · 2) el simulador a pantalla completa · 3) artefactos y muebles.
+with st.container(key="amb-pantalla"):
+    # Living / Cocina / Dormitorio van dentro del simulador, en la misma línea que el título.
+    ESC.escena(r)
 
-izq, der = st.columns([1.75, 1], gap="medium")
-with izq:
-    with st.container(border=True):
-        ESC.escena(r)
-
-with der:
-    sel = s.get("seleccion")
-    obj = None
-    if sel:
-        tipo, uid = sel.split(":", 1)
-        obj = E.buscar(uid) if tipo == "i" else next((m for m in s["muebles"] if m["uid"] == uid), None)
-        if obj is None or (tipo == "i" and obj["amb"] != s["ambiente"]):
-            obj = None
-    if obj and sel.startswith("i:"):
-        with st.container(horizontal=True, vertical_alignment="bottom"):
-            st.button("Rotar", icon=":material/rotate_right:", on_click=ESC.rotar, args=(sel,))
-            st.selectbox("Mover a", [a["id"] for a in E.D["AMBIENTES"]], key=f"mover-{obj['uid']}",
-                         index=[a["id"] for a in E.D["AMBIENTES"]].index(obj["amb"]),
-                         format_func=lambda a: E.AMB[a]["nombre"], on_change=_mover_a, args=(obj["uid"],))
-            st.button("", icon=":material/close:", on_click=_seleccionar, args=(None,), type="tertiary", help="Cerrar")
-        ui.tarjeta(obj, r, ef)
-    elif obj:
-        defn = E.MUEBLES[obj["tipo"]]
-        with st.container(border=True):
-            st.markdown(f"### {defn['icono']} {defn['nombre']}")
-            st.caption("Mueble decorativo: no consume energía. Sirve para recrear el ambiente.")
-            with st.container(horizontal=True):
+with st.container(key="amb-abajo"):
+    izq, der = st.columns(2, gap="medium")
+    with izq:
+        sel = s.get("seleccion")
+        obj = None
+        if sel:
+            tipo, uid = sel.split(":", 1)
+            obj = E.buscar(uid) if tipo == "i" else next((m for m in s["muebles"] if m["uid"] == uid), None)
+            if obj is None or (tipo == "i" and obj["amb"] != s["ambiente"]):
+                obj = None
+        if obj and sel.startswith("i:"):
+            with st.container(horizontal=True, vertical_alignment="bottom"):
                 st.button("Rotar", icon=":material/rotate_right:", on_click=ESC.rotar, args=(sel,))
-                st.button("Quitar", icon=":material/delete:", on_click=_quitar_mueble, args=(obj["uid"],))
+                st.selectbox("Mover a", [a["id"] for a in E.D["AMBIENTES"]], key=f"mover-{obj['uid']}",
+                             index=[a["id"] for a in E.D["AMBIENTES"]].index(obj["amb"]),
+                             format_func=lambda a: E.AMB[a]["nombre"], on_change=_mover_a, args=(obj["uid"],))
                 st.button("", icon=":material/close:", on_click=_seleccionar, args=(None,), type="tertiary", help="Cerrar")
-    else:
-        with st.container(border=True):
-            st.markdown("**Artefactos de este ambiente**")
-            arts = [i for i in s["items"] if i["amb"] == s["ambiente"]]
-            if not arts:
-                st.caption("Todavía no hay artefactos acá. Sumá uno desde el catálogo.")
-            for i in arts:
-                kwh = E.kwh_item(r, i["uid"])
-                st.button(f"{i['icono']} {i['nombre']} · {fmt(kwh, 1)} kWh/mes", key=f"sel-{i['uid']}",
-                          on_click=_seleccionar, args=("i:" + i["uid"],), type="tertiary")
-            st.caption("Tocá un objeto de la escena para editarlo.")
+            ui.tarjeta(obj, r, ef)
+        elif obj:
+            defn = E.MUEBLES[obj["tipo"]]
+            with st.container(border=True):
+                st.markdown(f"### {defn['icono']} {defn['nombre']}")
+                st.caption("Mueble decorativo: no consume energía. Sirve para recrear el ambiente.")
+                with st.container(horizontal=True):
+                    st.button("Rotar", icon=":material/rotate_right:", on_click=ESC.rotar, args=(sel,))
+                    st.button("Quitar", icon=":material/delete:", on_click=_quitar_mueble, args=(obj["uid"],))
+                    st.button("", icon=":material/close:", on_click=_seleccionar, args=(None,), type="tertiary", help="Cerrar")
+        else:
+            with st.container(border=True):
+                st.markdown("**Artefactos de este ambiente**")
+                arts = [i for i in s["items"] if i["amb"] == s["ambiente"]]
+                if not arts:
+                    st.caption("Todavía no hay artefactos acá. Sumá uno desde el catálogo.")
+                for i in arts:
+                    kwh = E.kwh_item(r, i["uid"])
+                    st.button(f"{i['icono']} {i['nombre']} · {fmt(kwh, 1)} kWh/mes", key=f"sel-{i['uid']}",
+                              on_click=_seleccionar, args=("i:" + i["uid"],), type="tertiary")
+                st.caption("Tocá un objeto de la escena para editarlo.")
 
-    with st.container(border=True):
-        st.markdown("**Sumar al ambiente**")
-        if st.button("Electrodoméstico", icon=":material/add:", type="primary", width="stretch"):
-            ui.catalogo(s["ambiente"])
-        cols = st.columns(3)
-        for n, m in enumerate(E.D["MUEBLES"]):
-            cols[n % 3].button(f"{m['icono']} {m['nombre']}", key=f"mueble-{m['id']}", width="stretch",
-                               on_click=_agregar_mueble, args=(m["id"],))
-        st.button("Reiniciar muebles de este ambiente", icon=":material/restart_alt:", on_click=_reiniciar_ambiente,
-                  type="tertiary")
+    with der:
+        with st.container(border=True):
+            st.markdown("**Sumar al ambiente**")
+            if st.button("Electrodoméstico", icon=":material/add:", type="primary", width="stretch"):
+                ui.catalogo(s["ambiente"])
+            cols = st.columns(3)
+            for n, m in enumerate(E.D["MUEBLES"]):
+                cols[n % 3].button(f"{m['icono']} {m['nombre']}", key=f"mueble-{m['id']}", width="stretch",
+                                   on_click=_agregar_mueble, args=(m["id"],))
+            st.button("Reiniciar muebles de este ambiente", icon=":material/restart_alt:", on_click=_reiniciar_ambiente,
+                      type="tertiary")

@@ -1,14 +1,20 @@
-"""Factura: escaneo de la factura de EDEA y calibración de la simulación."""
+"""Factura: la factura de la casa con el modelo de la boleta, el escaneo de la factura real y la calibración."""
+import datetime as dt
+import re
+
 import streamlit as st
 
 from simulador import estado as E
 from simulador import factura as FAC
+from simulador import ui
 from simulador.estado import MESES_LARGO, fmt
 
 s = E.sim()
 r = E.resultados()
 
 st.space("small")
+# La factura va arriba de todo, pero se dibuja al final: así toma lo que se carga más abajo en la misma vuelta.
+zona_factura = st.container()
 
 # ---------- Escaneo de la factura ----------
 CONF = {"alta": ":green-badge[confianza alta]", "media": ":orange-badge[confianza media]",
@@ -57,15 +63,17 @@ with st.container(border=True):
     det = st.session_state.get("factura-detectada")
     if det:
         st.markdown(f"**Esto encontramos** ({det['metodo']}). Revisalo y corregilo antes de usarlo:")
+        for nota in det.get("notas", []):
+            st.info(nota, icon=":material/info:")
         for aviso in det["avisos"]:
-            st.warning(aviso, icon=":material/info:")
+            st.warning(aviso, icon=":material/warning:")
         with st.form("factura-confirmar", border=False):
             a, b, c = st.columns(3)
             with a:
                 kwh_ok = st.number_input("Consumo del período (kWh)", 0, 2000, value=int(round(det["kwh"] or 0)))
                 st.markdown(CONF[det["kwh_conf"]])
             with b:
-                dias_ok = st.number_input("Días del período", 25, 65, value=int(det["dias"] or 30))
+                dias_ok = st.number_input("Días del período", 25, 65, value=int(det["dias"] or 60))
                 st.markdown(CONF[det["periodo_conf"]] + (f" {det['desde']:%d/%m/%Y} → {det['hasta']:%d/%m/%Y}" if det["desde"] else ""))
             with c:
                 imp_ok = st.number_input("Importe total ($)", 0.0, value=float(det["importe"] or 0), step=100.0)
@@ -81,7 +89,15 @@ with st.container(border=True):
                                       format_func=lambda k: f"{escs[k]['icono']} {escs[k]['nombre']}")
                 st.markdown(CONF[det.get("escenario_conf", "no encontrado")])
             if st.form_submit_button("Usar estos datos", icon=":material/check:", type="primary"):
-                s["factura"].update({"kwh": kwh_ok, "dias": dias_ok, "mes": mes_ok, "importe": imp_ok})
+                s["factura"].update({
+                    "kwh": kwh_ok, "dias": dias_ok, "mes": mes_ok, "importe": imp_ok,
+                    # Para dibujar la boleta escaneada: solo números, fechas y renglones (sin datos personales).
+                    "cuotas": det.get("cuotas", 1), "cuadro": det.get("cuadro"),
+                    "desde": det["desde"].isoformat() if det["desde"] else None,
+                    "hasta": det["hasta"].isoformat() if det["hasta"] else None,
+                    "conceptos": det.get("conceptos"), "kwh_leido": det["kwh"],
+                    "historial": det.get("historial"), "tarifas": det.get("tarifas"),
+                })
                 st.session_state["escenario"] = esc_ok  # el subsidio de la factura pasa a toda la app
                 st.session_state.pop("factura-detectada", None)
                 st.session_state["factura-n"] = n + 1  # vacía el archivo subido: la imagen no queda en la sesión
@@ -123,11 +139,87 @@ with st.container(border=True):
             if abs(s["ajuste"] - 1) > 1e-6:
                 st.button("Quitar ajuste", on_click=_quitar)
         st.caption("El ajuste escala todos los resultados; no modifica el catálogo.")
-        if fac.get("importe"):
-            from simulador import calculo as Ccalc
-            kwh_mes = fac["kwh"] / fac["dias"] * Ccalc.DIAS_MES[fac["mes"]]
-            est = Ccalc.factura(kwh_mes, s["tarifas"], E.escenario())["total"] * fac["dias"] / Ccalc.DIAS_MES[fac["mes"]]
-            st.caption(f"Control de importe: la factura dice **\\$ {fmt(fac['importe'])}**; con las tarifas cargadas y "
-                       f"{fmt(fac['kwh'])} kWh el simulador estima **\\$ {fmt(est)}**. Si difieren mucho, actualizá las tarifas.")
     else:
         st.caption("Completá el consumo del período para comparar.")
+
+
+# ---------- La factura de tu casa (y la escaneada al lado, si hay) ----------
+with zona_factura:
+    fac = s["factura"]
+    esc_id = E.escenario()
+    esc = s["tarifas"]["escenarios"][esc_id]
+    resolucion = s["tarifas"].get("resolucion", "")
+    vig = s["tarifas"].get("vigencia_desde") or ""
+    vigencia = dt.date.fromisoformat(vig).strftime("%d/%m/%y") if vig else ""
+    con_factura = fac["kwh"] > 0
+
+    # La casa simula un solo mes: su boleta no lleva gráfico de meses anteriores (solo la escaneada, que los trae).
+    comunes = {"categoria": esc["nombre"], "cuadro": resolucion}
+
+    st.markdown("#### 🧾 Tu factura" + (" vs. tu casa" if con_factura else ""))
+    if not s["items"]:
+        st.info("Agregá electrodomésticos en **Casa**: cada uno que cargues se suma a esta factura.",
+                icon=":material/add_home:")
+
+    if not con_factura:
+        # Sin factura: la boleta armada con lo que cargaste en Casa. Como la de EDEA: lectura de dos meses
+        # cobrada en dos cuotas iguales (cada cuota = un mes de tu casa, el mismo total que muestra Casa).
+        m = E.mes()
+        kwh_mes, dias_mes = r["meses"][m]["total"], E.C.DIAS_MES[m]
+        b_casa = ui.boleta_desde_detalle(
+            E.C.detalle_factura(kwh_mes, s["tarifas"], esc_id), "Tu casa", "Factura simulada con tus artefactos",
+            periodo=f"{2 * dias_mes} días (2 cuotas)", dias=dias_mes, vigencia=vigencia,
+            bimestre=(2 * kwh_mes, 2 * dias_mes), **comunes)
+        st.caption("Se arma sola con lo que cargás en **Casa**. Escaneá tu factura abajo para verlas una al lado "
+                   "de la otra.")
+        ui.boleta_sola(b_casa)
+    else:
+        # Con factura: las dos boletas por cuota (EDEA lee cada dos meses y cobra la mitad en cada factura).
+        # La casa va sin el ajuste, para que se vea la diferencia.
+        simulado = r["meses"][fac["mes"]]["total"] / r["ajuste"] / E.C.DIAS_MES[fac["mes"]] * fac["dias"]
+        # EDEA factura cada dos meses en dos cuotas; un período de un mes (cargado a mano) va en una sola.
+        cuotas = 2 if fac["dias"] > 45 else 1
+        dias_cuota = fac["dias"] / cuotas
+        kwh_fac, kwh_casa = fac["kwh"] / cuotas, simulado / cuotas
+        periodo = f"{fmt(dias_cuota)} días"
+        if fac.get("desde") and fac.get("hasta"):
+            d1, d2 = (dt.date.fromisoformat(x) for x in (fac["desde"], fac["hasta"]))
+            periodo = f"{d1:%d/%m/%y} al {d2:%d/%m/%y}" + (f" ({cuotas} cuotas)" if cuotas > 1 else "")
+        bim_fac = (fac["kwh"], fac["dias"]) if cuotas == 2 else None
+        bim_casa = (simulado, fac["dias"]) if cuotas == 2 else None
+        if fac.get("conceptos") and fac.get("kwh_leido") == fac["kwh"]:
+            b_fac = ui.boleta_desde_escaneo(fac, kwh_fac, "Tu factura", "Leída de la factura escaneada",
+                                            periodo=periodo, dias=dias_cuota, categoria=esc["nombre"],
+                                            cuadro=fac.get("cuadro") or "", a_pagar=fac.get("importe"),
+                                            bimestre=bim_fac)
+        else:
+            b_fac = ui.boleta_desde_detalle(E.C.detalle_factura(kwh_fac, s["tarifas"], esc_id), "Tu factura",
+                                            "Con el consumo de tu factura", periodo=periodo, dias=dias_cuota,
+                                            vigencia=vigencia, bimestre=bim_fac, **comunes)
+        b_casa = ui.boleta_desde_detalle(E.C.detalle_factura(kwh_casa, s["tarifas"], esc_id), "Tu casa",
+                                         "Simulada con tus artefactos", periodo=periodo, dias=dias_cuota,
+                                         vigencia=vigencia, bimestre=bim_casa, **comunes)
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Consumo de la factura (por cuota)" if cuotas > 1 else "Consumo de la factura", f"{fmt(kwh_fac)} kWh", border=False,
+                  help="Por cuota: EDEA lee el medidor cada dos meses y lo cobra en dos cuotas iguales."
+                  if cuotas > 1 else None)
+        m2.metric("Consumo de tu casa (por cuota)" if cuotas > 1 else "Consumo de tu casa", f"{fmt(kwh_casa)} kWh", delta=f"{fmt((kwh_casa / kwh_fac - 1) * 100, 0)} %",
+                  delta_color="off", border=False)
+        m3.metric("Diferencia en el total", f"$ {fmt(b_casa['total'] - b_fac['total'], 2)}",
+                  delta=f"{fmt((b_casa['total'] / b_fac['total'] - 1) * 100, 0)} %", delta_color="off", border=False)
+        ui.boletas_lado_a_lado(b_fac, b_casa)
+
+        n_fac = re.findall(r"\d+", fac.get("cuadro") or "")
+        n_app = re.findall(r"\d+", resolucion)
+        if fac.get("conceptos") and n_fac and n_app and n_fac[0] != n_app[0]:
+            st.info(f"Tu factura usa el cuadro tarifario **{fac['cuadro']}** y tu casa el vigente (**{resolucion}**). "
+                    "Con cuadros distintos los precios por kWh cambian aunque el consumo sea el mismo.",
+                    icon=":material/info:")
+
+        def _sacar_factura():
+            s["factura"] = {"kwh": 0, "dias": 60, "mes": s["factura"]["mes"]}
+
+        st.button("Ver solo la factura de mi casa", icon=":material/close:", type="tertiary", on_click=_sacar_factura)
+
+

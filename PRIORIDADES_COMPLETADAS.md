@@ -84,6 +84,21 @@ Este documento registra el trabajo realizado para las prioridades marcadas como 
 - Falta verificar los modelos en la app publicada y decidir si las casas guardadas requieren
   almacenamiento persistente.
 
+## Actualización: meta argentina y dataset reescalado (1/11/2026)
+
+- La meta pasó de 25,917658 kWh (mediana del hogar francés) a **13,33 kWh por día = 400 kWh por
+  mes**, el límite del tramo R3 del cuadro tarifario de EDEA (Res. MIySP N° 682/2026).
+- Para que la meta siga siendo la mediana, toda la energía del dataset se multiplica por
+  **0,514** (13,33 ÷ 25,92) antes de armar las filas. Las métricas de clasificación no cambian
+  (accuracy 0,738, recall 0,700) y los errores de regresión quedan en la escala argentina
+  (KNN k=50: MAE 2,249 kWh, RMSE 2,954 kWh, R² 0,371 en prueba).
+- `entrenamiento_modelos.py` ahora lee el dataset local (`datos/crudos/`) y **guarda** en
+  `modelos/` el regresor y el clasificador elegidos en validación (KNN k=50 y GaussianNB). La app
+  pasó de KNN k=25 a k=50.
+- La app ya no usa el cos φ fijo de 0,95: pasa al modelo la energía reactiva típica del dataset
+  (1,5 kVArh por día) y calcula el cos φ con ella.
+- Las cifras anteriores de esta página quedan como registro de la Prioridad 1.
+
 ## Prioridades aún abiertas
 
 Los entregables pendientes de la Prioridad 3 (presentación, bitácora y distribución de tareas)

@@ -1,12 +1,12 @@
 /* Ambiente isométrico en SVG: muebles y artefactos arrastrables.
-   Unidad: 1 baldosa = 0,5 m. Ambiente de 12 x 10 baldosas (6 x 5 m). */
+   Unidad: 1 baldosa = 0,5 m. Ambiente de 16 x 16 baldosas (8 x 8 m): crece parejo hacia los dos lados de la pantalla. */
 (function (root) {
   const TW = 56, TH = 28, ZH = 24;
-  const ANCHO = 12, FONDO = 10, ALTO = 5.6;
+  const ANCHO = 16, FONDO = 16, ALTO = 5.6;
   const OX = FONDO * TW / 2 + 24;
-  const OY = ALTO * ZH + 84;
+  const OY = ALTO * ZH + 50;  // margen justo para la copa del árbol
   const VW = (ANCHO + FONDO) * TW / 2 + 48;
-  const VH = OY + (ANCHO + FONDO) * TH / 2 + 24;
+  const VH = OY + (ANCHO + FONDO) * TH / 2 + 8;
 
   const iso = (x, y, z = 0) => [OX + (x - y) * TW / 2, OY + (x + y) * TH / 2 - z * ZH];
   const pts = (arr) => arr.map((p) => p.map((n) => n.toFixed(1)).join(',')).join(' ');
@@ -184,7 +184,11 @@
     function render() {
       const { objetos, seleccion, hora, ambiente } = opts;
       const noche = oscuridad(hora);
-      let s = `<svg viewBox="0 0 ${VW} ${VH}" class="iso" role="img" aria-label="Ambiente ${ambiente.nombre}">`;
+      // Si el lienzo es más ancho que el dibujo, el jardín se extiende a los costados (EX a cada lado)
+      // y la habitación queda centrada: así la escena ocupa todo el ancho sin franjas vacías.
+      const ancho = el.clientWidth, alto = el.clientHeight;
+      const EX = ancho > 0 && alto > 0 ? Math.max(0, (VH * ancho / alto - VW) / 2) : 0;
+      let s = `<svg viewBox="${-EX} 0 ${VW + 2 * EX} ${VH}" class="iso" role="img" aria-label="Ambiente ${ambiente.nombre}">`;
       s += `<defs>
         <radialGradient id="glow"><stop offset="0" stop-color="#34d399" stop-opacity=".85"/><stop offset="1" stop-color="#34d399" stop-opacity="0"/></radialGradient>
         <radialGradient id="glowHot"><stop offset="0" stop-color="#f97316" stop-opacity=".9"/><stop offset="1" stop-color="#f97316" stop-opacity="0"/></radialGradient>
@@ -203,8 +207,8 @@
         </pattern>
       </defs>`;
       // El terreno cubre el fondo completo; muros y piso interior se dibujan encima.
-      s += `<rect x="0" y="0" width="${VW}" height="${VH}" class="jardin"/>`;
-      s += `<rect x="0" y="0" width="${VW}" height="${VH}" class="textura-jardin"/>`;
+      s += `<rect x="${-EX}" y="0" width="${VW + 2 * EX}" height="${VH}" class="jardin"/>`;
+      s += `<rect x="${-EX}" y="0" width="${VW + 2 * EX}" height="${VH}" class="textura-jardin"/>`;
       const losas = [
         [1.05, -6.9, 0.72, 0.48], [1.55, -6.4, 0.72, 0.48],
         [2.05, -5.9, 0.72, 0.48], [2.55, -5.4, 0.72, 0.48],
@@ -344,7 +348,7 @@
       }
 
       // capa de noche
-      if (noche > 0) s += `<rect x="0" y="0" width="${VW}" height="${VH}" class="noche-capa" style="opacity:${noche}"/>`;
+      if (noche > 0) s += `<rect x="${-EX}" y="0" width="${VW + 2 * EX}" height="${VH}" class="noche-capa" style="opacity:${noche}"/>`;
 
       // globos de consumo (siempre arriba)
       for (const it of lista) {
@@ -405,6 +409,16 @@
     };
     el.addEventListener('pointerup', fin);
     el.addEventListener('pointercancel', fin);
+
+    // Al cambiar el tamaño del lienzo se vuelve a dibujar para ajustar el ancho del jardín.
+    let pendiente = false;
+    if (typeof ResizeObserver !== 'undefined') {
+      new ResizeObserver(() => {
+        if (pendiente) return;
+        pendiente = true;
+        requestAnimationFrame(() => { pendiente = false; if (!drag) render(); });
+      }).observe(el);
+    }
 
     return {
       actualizar(nuevas) { opts = { ...opts, ...nuevas }; render(); },

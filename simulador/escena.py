@@ -87,6 +87,26 @@ def _al_seleccionar():
         E.sim()["seleccion"] = ev.get("key")
 
 
+def _al_quitar():
+    ev = (st.session_state.get(CLAVE) or {}).get("quitar")
+    if not ev or not ev.get("key"):
+        return
+    tipo, uid = ev["key"].split(":", 1)
+    s = E.sim()
+    if tipo == "i":
+        E.quitar(uid)
+    else:
+        s["muebles"] = [m for m in s["muebles"] if m["uid"] != uid]
+    s["seleccion"] = None
+
+
+def _al_cambiar_ambiente():
+    ev = (st.session_state.get(CLAVE) or {}).get("ambiente")
+    if ev and ev.get("id") in E.AMB:
+        s = E.sim()
+        s["ambiente"], s["seleccion"] = ev["id"], None
+
+
 def _al_rotar():
     ev = (st.session_state.get(CLAVE) or {}).get("rotar")
     if ev:
@@ -128,10 +148,13 @@ def escena(r: dict) -> None:
         key=CLAVE,
         data={
             "ambiente": amb, "objetos": objetos, "seleccion": s.get("seleccion"),
+            "ambientes": [{"id": a["id"], "nombre": a["nombre"], "icono": a["icono"]} for a in E.D["AMBIENTES"]],
             "base_kw": s["base_w"] / 1000 * r["ajuste"], "hora": 13.0,
             "resumen": f"{E.fmt(total_amb)} kWh/mes · $ {E.fmt(total_amb * ef)}",
         },
         on_mover_change=_al_mover,
         on_seleccion_change=_al_seleccionar,
         on_rotar_change=_al_rotar,
+        on_ambiente_change=_al_cambiar_ambiente,
+        on_quitar_change=_al_quitar,
     )

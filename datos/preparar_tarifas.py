@@ -50,16 +50,21 @@ ANEXOS = {
 BLOQUE_SEF = 150  # kWh/mes subsidiados (Anexo 52 y nota (2) del Anexo 87)
 
 # Impuestos y contribuciones para la categoría T1R (tabla "Impuestos y FPCT" del OCEBA,
-# https://oceba.gba.gov.ar/nueva_web/s.php?i=19 , revisada el 31/01/2026).
-IMPUESTOS = [
-    ("Decreto-Ley 9038 (Fondo Especial Grandes Obras Eléctricas)", 0.0, 0.0),
-    ("Decreto-Ley 7290 (Fondo de Desarrollo Eléctrico Provincial)", 4.0, 0.01),  # tarifa social: 0,01 % (Res. 771/24 art. 52)
-    ("Ley 11769 art. 75 (tasa municipal)", 6.0, 6.0),
-    ("Ley 11769 art. 74", 0.001, 0.001),
-    ("IVA", 21.0, 21.0),
-    ("Ley 11769 art. 45 (Fondo Provincial de Compensaciones Tarifarias)", 5.5, 5.5),
-]
+# https://oceba.gba.gov.ar/nueva_web/s.php?i=19 , revisada el 31/01/2026), comparados con boletas
+# reales de EDEA de 2026. Columnas: sin subsidio, subsidio nacional (SEF), tarifa social.
 URL_IMPUESTOS = "https://oceba.gba.gov.ar/nueva_web/s.php?i=19"
+FUENTE_BOLETAS = "Boletas reales de EDEA (T1R, 2026): renglón LEY 10740 = 18 % del subtotal"
+IMPUESTOS = [  # en el orden de la boleta de EDEA
+    ("IVA", 21.0, 21.0, 21.0, URL_IMPUESTOS),
+    # No figura en la tabla del OCEBA, pero todas las boletas revisadas (N1 y N3) lo cobran: 18 % exacto.
+    ("Ley 10740", 18.0, 18.0, 18.0, FUENTE_BOLETAS),
+    ("Ley 11769 art. 74", 0.001, 0.001, 0.001, URL_IMPUESTOS),
+    ("Ley 11769 art. 75 (tasa municipal)", 6.0, 6.0, 6.0, URL_IMPUESTOS),
+    ("Ley 11769 art. 45 (Fondo Provincial de Compensaciones Tarifarias)", 5.5, 5.5, 5.5, URL_IMPUESTOS),
+    # Con SEF o tarifa social: 0,01 % (Res. 771/24 art. 52; también en las boletas con segmentación N3/SEF).
+    ("Decreto-Ley 7290 (Fondo de Desarrollo Eléctrico Provincial)", 4.0, 0.01, 0.01, URL_IMPUESTOS),
+    ("Decreto-Ley 9038 (Fondo Especial Grandes Obras Eléctricas)", 0.0, 0.0, 0.0, URL_IMPUESTOS),
+]
 
 
 def descargar() -> None:
@@ -152,7 +157,8 @@ def armar() -> list[dict]:
     ts_sef = leer_t1r("68")
     ctt = leer_ctt()
     imp_general = round(sum(x[1] for x in IMPUESTOS), 3)
-    imp_ts = round(sum(x[2] for x in IMPUESTOS), 3)
+    imp_sef = round(sum(x[2] for x in IMPUESTOS), 3)
+    imp_ts = round(sum(x[3] for x in IMPUESTOS), 3)
     filas = []
 
     def fila(esc, anexo, tr, cv, bloque=0.0, cv_bloque=0.0, bonif=0.0, c=0.0, c_bloque=0.0, imp=imp_general):
@@ -172,7 +178,7 @@ def armar() -> list[dict]:
     # Subsidio nacional (SEF): primeros 150 kWh a precio del Anexo 52, el resto a precio pleno (Anexo 44)
     for tr, ts_ in zip(general["tramos"], sef["tramos"]):
         fila("sef", "52+44", tr, tr["cargo_variable"], bloque=BLOQUE_SEF, cv_bloque=ts_["cargo_variable"],
-             c=ctt["residencial"], c_bloque=ctt["sef_bloque"])
+             c=ctt["residencial"], c_bloque=ctt["sef_bloque"], imp=imp_sef)
     # Tarifa social provincial (grupo 1): Anexo 60; desde 150 kWh, los primeros 150 al precio "primeros 150"
     for nombre, datos, anexo in (("tarifa_social", ts, "60"), ("tarifa_social_sef", ts_sef, "68")):
         for tr in datos["tramos"]:
@@ -198,9 +204,10 @@ def main() -> int:
         w.writerows(filas)
     with open(SALIDA_IMP, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["concepto", "alicuota_pct_residencial", "alicuota_pct_tarifa_social", "fuente_url"])
-        for nombre, gral, ts in IMPUESTOS:
-            w.writerow([nombre, gral, ts, URL_IMPUESTOS])
+        w.writerow(["concepto", "alicuota_pct_residencial", "alicuota_pct_sef", "alicuota_pct_tarifa_social",
+                    "fuente_url"])
+        for nombre, gral, sef_, ts, fuente in IMPUESTOS:
+            w.writerow([nombre, gral, sef_, ts, fuente])
     print(f"Listo: {len(filas)} filas → {SALIDA}")
     for esc in dict.fromkeys(f["escenario"] for f in filas):
         print(f"  {esc}: {sum(1 for f in filas if f['escenario'] == esc)} tramos")

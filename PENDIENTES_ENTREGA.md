@@ -45,8 +45,9 @@ distribución de tareas.
 Estos puntos están anotados en [`README_PENDIENTES.md`](README_PENDIENTES.md); no todos son
 requisitos explícitos de la consigna:
 
-- Revisar el factor de potencia fijo de 0,95 que afecta al clasificador. Estimar el cos φ de la
-  vivienda, mostrarlo y usarlo en las variables del modelo. Investigar la norma de OCEBA antes de
+- El valor fijo de cos φ 0,95 que hacía fallar al clasificador ya se reemplazó por la energía
+  reactiva típica del dataset. Falta estimar el cos φ de la vivienda, mostrarlo y usarlo en las
+  variables del modelo. Investigar la norma de OCEBA antes de
   calcular un posible recargo.
 - Probar el escaneo y el código de barras con una factura real de EDEA.
 - Decidir cómo persistir las casas guardadas cuando la aplicación se publique.

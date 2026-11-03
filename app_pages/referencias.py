@@ -118,7 +118,9 @@ with der.container(border=True, height="stretch"):
     st.markdown("#### 🤖 Conexión con el modelo de ML")
     st.caption("El simulador es una **estimación determinista** con tus supuestos: no es una predicción de aprendizaje "
                "automático. La alerta del TP la dan el **clasificador directo** y la **regresión + umbral**.")
-    s["meta"] = st.slider("Meta diaria (mismo umbral del clasificador), kWh/día", 2.0, 40.0, value=float(s["meta"]), step=0.5)
+    s["meta"] = st.slider("Meta diaria, kWh/día", 2.0, 40.0, value=float(s["meta"]), step=0.1,
+                          help="La meta de los modelos es 13,3 kWh/día = 400 kWh por mes, el límite del tramo R3 "
+                               "del cuadro tarifario de EDEA (Res. MIySP N° 682/2026).")
     st.plotly_chart(G.meta_diaria(r, s["meta"]), config={"displayModeBar": False})
     sobre = sum(1 for x in r["meses"] if x["total"] / x["dias"] > s["meta"])
     st.markdown(f"**{sobre} de 12 meses** superan la meta en promedio. Los días reales varían alrededor del "

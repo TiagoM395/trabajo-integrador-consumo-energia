@@ -12,7 +12,33 @@
   display: block;
 }
 .sim-escena { display: grid; gap: 10px; }
-.barra { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* Pantalla completa: la escena ocupa todo el alto disponible y el reloj va en vertical al costado. */
+@media (min-width: 641px) {
+  .sim-escena {
+    height: calc(100vh - 28px); min-height: 420px;
+    grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .sim-escena .barra, .sim-escena .ayuda { grid-column: 1 / -1; }
+  .sim-escena .lienzo { grid-row: 2; grid-column: 2; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .sim-escena .accion { grid-row: 2; grid-column: 1; width: 104px; }
+  .sim-escena .lienzo .iso { width: 100%; height: 100%; }
+  .sim-escena .reloj {
+    grid-row: 2; grid-column: 3; flex-direction: column; justify-content: flex-start; width: 104px; padding: 12px 8px;
+  }
+  .sim-escena .reloj .c { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; min-height: 0; width: 100%; }
+  .sim-escena .reloj .l { flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+  .sim-escena .reloj .w { font-size: .78rem; line-height: 1.25; }
+  .sim-escena .reloj input { flex: 1; width: auto; min-height: 0; writing-mode: vertical-lr; }
+}
+.barra { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+.barra .ambientes { justify-self: start; }
+.barra .titulo { justify-self: center; text-align: center; }
+.barra .vistas { justify-self: end; }
+.seg.ambientes button { font-size: .9rem; padding: .35rem .8rem; }
+@media (max-width: 900px) {
+  .barra { grid-template-columns: 1fr; justify-items: center; }
+  .barra .ambientes, .barra .vistas { justify-self: center; }
+}
 .barra .titulo { font-weight: 800; font-size: 1.05rem; }
 .barra .titulo small { font-weight: 600; opacity: .65; margin-left: 6px; font-size: .85rem; }
 .seg { display: inline-flex; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 3px; gap: 2px; }
@@ -33,6 +59,25 @@
 .reloj .w { font-weight: 800; color: #059669; }
 .reloj input { width: 100%; accent-color: #10b981; }
 .ayuda { font-size: .78rem; opacity: .65; margin: 0; }
+/* Panel izquierdo: el objeto seleccionado con Rotar y Eliminar (mismo tamaño que el reloj) */
+.accion { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px; border-radius: 14px;
+  background: var(--panel-2); border: 1px solid var(--line); box-sizing: border-box; text-align: center; }
+.acc-vacio { margin: auto 0; font-size: .78rem; opacity: .7; line-height: 1.35; }
+.acc-vacio span { display: block; font-size: 1.6rem; margin-bottom: 6px; }
+.acc-ico { width: 52px; height: 52px; display: grid; place-items: center; font-size: 1.7rem; border-radius: 16px;
+  background: var(--panel); border: 1px solid var(--line); }
+.acc-nom { font-weight: 800; font-size: .86rem; line-height: 1.2; word-break: break-word; }
+.acc-dato { font-size: .76rem; font-weight: 700; color: #059669; }
+.acc-btn { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px;
+  border-radius: 12px; border: 1px solid var(--line); background: var(--panel); color: inherit; font: inherit;
+  font-size: 1.25rem; cursor: pointer; transition: background .15s, border-color .15s; }
+.acc-btn span { font-size: .78rem; font-weight: 700; }
+.acc-btn:hover { border-color: #10b981; background: color-mix(in srgb, #10b981 10%, var(--panel)); }
+.acc-btn.quitar:hover { border-color: #e11d48; background: color-mix(in srgb, #e11d48 10%, var(--panel)); color: #be123c; }
+@media (max-width: 640px) {
+  .accion { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .acc-btn { width: auto; flex-direction: row; padding: 8px 12px; }
+}
 
 .iso { width: 100%; height: auto; display: block; }
 .iso .jardin { fill: url(#cesped); }

@@ -137,7 +137,7 @@ def costo_consumo(tarifas: dict, kwh: float, sel: str, factura) -> go.Figure:
         f = factura(kwh, tarifas, esc_id)
         fig.add_scatter(x=[kwh], y=[f["total"]], mode="markers", showlegend=False,
                         marker=dict(size=13, color=ESC_COLOR.get(esc_id, "#888"), line=dict(width=3, color="white")),
-                        hovertemplate=f"<b>{e['nombre']}</b><br>{fmt(kwh)} kWh → $ {fmt(f['total'])}"
+                        hovertemplate=f"<b>{e['nombre']}</b><br>{fmt(kwh)} kWh → $ {fmt(f['total'], 2)}"
                                       f"<br>{fmt(f['efectivo'], 1)} $/kWh efectivo<extra></extra>")
     fig.add_vline(x=kwh, line=dict(color="#3b82f6", width=2, dash="dot"),
                   annotation_text=f"Tu consumo: {fmt(kwh)} kWh", annotation_position="top right")

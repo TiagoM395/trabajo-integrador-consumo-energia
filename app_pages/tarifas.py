@@ -41,7 +41,7 @@ for col, (esc_id, e) in zip(cols, T["escenarios"].items()):
     color = G.ESC_COLOR.get(esc_id, "#64748b")
     with col.container(border=True, height="stretch"):
         st.markdown(f"**{e['icono']} {e['nombre']}**" + (" :green-badge[Tu situación]" if elegido else ""))
-        st.html(f"<div class='esc-total' style='color:{color}'>$ {fmt(f['total'])}"
+        st.html(f"<div class='esc-total' style='color:{color}'>$ {fmt(f['total'], 2)}"
                 f"<small style='font-size:.85rem;opacity:.6'> / mes</small></div>")
         if esc_id != "sin_subsidio":
             ahorro = sin["total"] - f["total"]
@@ -59,7 +59,7 @@ for col, (esc_id, e) in zip(cols, T["escenarios"].items()):
             for n, v in conceptos if v)
         st.html(f"<table style='width:100%;font-size:.85rem;border-collapse:collapse'>{filas_html}"
                 f"<tr style='font-weight:800;border-top:1px solid rgba(127,127,127,.4)'><td>Total</td>"
-                f"<td style='text-align:right;white-space:nowrap'>$ {fmt(f['total'])}</td></tr></table>")
+                f"<td style='text-align:right;white-space:nowrap'>$ {fmt(f['total'], 2)}</td></tr></table>")
         if f.get("tope"):
             st.caption(f"Primeros {fmt(f['tope'])} kWh a precio bonificado"
                        + (f"; los otros {fmt(f['fuera'])} kWh, a precio pleno." if f["fuera"] > 0 else "."))

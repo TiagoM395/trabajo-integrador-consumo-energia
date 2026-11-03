@@ -78,11 +78,14 @@ provincia de Buenos Aires).
 para **Edenor y Edesur** (AMBA) y salen de notas periodísticas. **No se aplican a EDEA**, que regula
 el OCEBA. No hay que usarlas en la app.
 
-### 1.4 El problema actual: el valor fijo de 0,95
+### 1.4 El problema del valor fijo de 0,95 (resuelto con el paso A)
 
-La app no tiene cómo medir el cos φ de la casa, así que le pasa al modelo **siempre 0,95**
-(`COSPHI_TIPICO` en [`simulador/prediccion.py`](simulador/prediccion.py)). En el hogar de Francia
-con el que se entrenó:
+> **Resuelto (1/11/2026):** la app ya no usa 0,95. Le pasa al modelo la energía reactiva típica del
+> dataset (1,5 kVArh por día, `REACTIVA_DIA_DATASET` en [`simulador/prediccion.py`](simulador/prediccion.py))
+> y calcula el cos φ con ella, igual que en el entrenamiento. Quedan pendientes los pasos B a F.
+
+La app no tiene cómo medir el cos φ de la casa, así que le pasaba al modelo **siempre 0,95**. En el
+hogar de Francia con el que se entrenó:
 
 | Días | cos φ promedio | Desvío |
 |---|---:|---:|
@@ -95,7 +98,7 @@ en julio:
 
 | cos φ que recibe el modelo | Probabilidad de «sí» del clasificador |
 |---:|---:|
-| **0,95** (hoy) | **0 %** |
+| **0,95** (antes) | **0 %** |
 | 0,98 | 95 % |
 | 0,99 | 99,9 % |
 
@@ -105,7 +108,7 @@ Detalle completo en la sección 11 de [`README_MODELO_CLASIFICACION.md`](explica
 
 | Paso | Qué hacer | Qué hace falta | Resultado |
 |---|---|---|---|
-| **A** | **Arreglo rápido:** usar como cos φ el valor típico del dataset (≈ 0,99) en vez de 0,95 | Cambiar una línea | El clasificador vuelve a funcionar |
+| **A** ✅ | **Arreglo rápido:** usar la energía reactiva típica del dataset en vez del cos φ fijo de 0,95 (hecho el 1/11/2026) | Cambiar una línea | El clasificador vuelve a funcionar |
 | **B** | **Estimar el cos φ de la casa** a partir de sus electrodomésticos: cada uno con su factor de potencia típico (las resistencias ≈ 1; motores y compresores, menos) | Un factor de potencia por equipo del catálogo, **con fuente** (va en `datos/FUENTES.md`) | La app calcula la energía reactiva y el cos φ de la casa, como el medidor del dataset |
 | **C** | **Mostrarlo en Mi casa** (paso 3): «⚡ Tu cos φ estimado: 0,96», qué equipos lo bajan (heladera, lavarropas, aire, bomba, cargadores) y qué significa | Paso B | El indicador que pide el trabajo |
 | **D** | **Pasarle al modelo el cos φ estimado** (y su energía reactiva) en lugar de un valor fijo | Paso B | Predicción coherente con la casa armada |
@@ -133,9 +136,13 @@ uso principal del cos φ en la app. **E** queda hasta conseguir la norma del OCE
 |---|---|---|
 | 6 | **El cos φ** | Ver sección 1 |
 | 7 | **Temperatura real** | Hoy vienen 20 °C por defecto. Se podría traer la temperatura y el pronóstico del día desde Open‑Meteo, la misma fuente de clima del dataset |
-| 8 | **La meta de 25,9 kWh por día** | Es el consumo típico de la casa francesa, alto para un hogar de acá: las casas chicas casi siempre dan «no te pasás». Cambiarla implica reentrenar los modelos |
-| 9 | **Casas muy distintas a la de Francia** | El modelo de regresión no puede predecir menos que los días más bajos de esa casa: una casa de 2,9 kWh por día da 18,4 kWh para mañana. Está explicado en [`README_MODELO_REGRESION.md`](explicaciones/README_MODELO_REGRESION.md) (sección 10); falta decidir si se aclara en la app |
+| 8 | ~~**La meta de 25,9 kWh por día**~~ | ✅ **Resuelto (1/11/2026).** La meta pasó a 13,3 kWh por día (400 kWh por mes, límite del tramo R3 de EDEA) y el dataset se reescaló × 0,514 a un hogar argentino; los modelos se reentrenaron. Ver [`README_ANALISIS.md`](explicaciones/README_ANALISIS.md), sección 3 |
+| 9 | **Casas muy chicas** | KNN no predice menos que los días más bajos del hogar de entrenamiento, así que sobreestima casas de muy poco consumo. Probar un modelo que extrapole (regresión lineal o árbol) y compararlo en validación |
 | 10 | **Pruebas automáticas de la predicción** | No hay tests de [`simulador/prediccion.py`](simulador/prediccion.py) (armado de las 16 variables, corrimiento del mes, submedidores) |
+| 11 | **Verano con aire acondicionado** | El hogar de Francia no tenía aire y en verano consumía poco: el modelo estima de menos en enero y febrero. Entrenar con un hogar que use aire o sumar una variable de temperatura alta |
+| 12 | **Más hogares** | Entrenar con más de un hogar: otros datasets públicos o el historial bimestral de facturas reales de EDEA |
+| 13 | **Feriados argentinos al entrenar** | El entrenamiento usa feriados franceses y la app los argentinos. Al reentrenar, usar la lista argentina |
+| 14 | **Historial de la casa** | El consumo de la semana anterior se completa con el de hoy. Guardar el consumo diario de la casa o usar la factura anterior |
 
 ## 4. Mi casa
 

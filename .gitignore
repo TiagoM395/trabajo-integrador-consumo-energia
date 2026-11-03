@@ -4,3 +4,7 @@ __pycache__/
 .venv/
 .streamlit/secrets.toml
 sesiones/
+
+# Boletas reales (tienen datos personales)
+boletas/
+boletas 1/

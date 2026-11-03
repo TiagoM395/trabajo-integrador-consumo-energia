@@ -29,7 +29,7 @@ COLOR_CAT = {
     "ocio": "#f43f5e", "oficina": "#a855f7", "luz": "#eab308", "otros": "#64748b",
 }
 COLOR = {"act": "#10b981", "pas": "#f97316", "base": "#94a3b8"}
-ANCHO, FONDO = 12, 10  # ambiente en baldosas de 0,5 m
+ANCHO, FONDO = 16, 16  # ambiente en baldosas de 0,5 m (8 x 8 m), igual que en escena.js
 
 
 def nuevo_uid(p: str) -> str:
@@ -46,8 +46,8 @@ def iniciar() -> None:
     st.session_state.sim = {
         "items": [], "base_w": 0, "tarifas": copy.deepcopy(C.tarifas_edea()),
         "muebles": [{"uid": nuevo_uid("m"), **m} for m in D["ESCENA_INICIAL"]],
-        "ambiente": "living", "meta": 12.0, "ajuste": 1.0, "perfil": "vacio", "seleccion": None,
-        "factura": {"kwh": 0, "dias": 30, "mes": dt.date.today().month - 1},
+        "ambiente": "living", "meta": 13.3, "ajuste": 1.0, "perfil": "vacio", "seleccion": None,
+        "factura": {"kwh": 0, "dias": 60, "mes": dt.date.today().month - 1},
     }
     st.session_state.setdefault("escenario", "sin_subsidio")
     st.session_state.setdefault("mes", dt.date.today().month - 1)
@@ -234,7 +234,8 @@ def sincronizar() -> None:
         inst["estacion"] = "todo"
         inst["factores"] = [1.0] * 12
     # Sesiones abiertas antes del cambio a las tarifas reales de EDEA: se actualizan.
-    if any("tramos" not in e for e in s["tarifas"]["escenarios"].values()):
+    # También las abiertas antes de detallar los impuestos (Ley 10740 y alícuotas por situación).
+    if any("tramos" not in e or "impuestos" not in e for e in s["tarifas"]["escenarios"].values()):
         s["tarifas"] = copy.deepcopy(C.tarifas_edea())
     if ss.get("escenario") not in s["tarifas"]["escenarios"]:
         ss["escenario"] = "sin_subsidio"

@@ -3,18 +3,20 @@
 ## 1. Resumen ejecutivo
 
 La aplicación incluye dos modelos para estimar el consumo eléctrico de las próximas 24 horas y
-anticipar si se superará una meta diaria de **25,9 kWh**:
+anticipar si se superará una meta diaria de **13,3 kWh** (400 kWh por mes, el límite del tramo R3
+del cuadro tarifario de EDEA):
 
 | Modelo | Tipo | Archivo | Resultado que entrega |
 |---|---|---|---|
-| K vecinos más cercanos (KNN, k = 25) con escalado estándar | Regresión | [`modelos/reg_24h.pkl`](modelos/reg_24h.pkl) | Consumo estimado en kWh para las próximas 24 horas |
+| K vecinos más cercanos (KNN, k = 50) con escalado estándar | Regresión | [`modelos/reg_24h.pkl`](modelos/reg_24h.pkl) | Consumo estimado en kWh para las próximas 24 horas |
 | Naive Bayes gaussiano (GaussianNB) | Clasificación binaria | [`modelos/clf_me_paso.pkl`](modelos/clf_me_paso.pkl) | Si se supera o no la meta diaria |
 
-Los modelos se evalúan con mediciones de **un solo hogar de Sceaux, Francia**, entre 2006 y
-2010. La comparación reproducible y los resultados completos están en
+Los modelos se entrenan con mediciones de **un solo hogar de Sceaux, Francia**, entre 2006 y
+2010, cuyo consumo se **reescaló** al de un hogar argentino (× 0,514). La comparación reproducible y
+los resultados completos están en
 [`notebooks/entrenamiento_modelos.ipynb`](notebooks/entrenamiento_modelos.ipynb) y
-[`explicaciones/README_ANALISIS.md`](explicaciones/README_ANALISIS.md). En prueba, el KNN k=25
-obtuvo MAE **4,557 kWh** y R² **0,304**; GaussianNB tuvo accuracy **0,738** y recall **0,700**.
+[`explicaciones/README_ANALISIS.md`](explicaciones/README_ANALISIS.md). En prueba, el KNN k=50
+obtuvo MAE **2,249 kWh** y R² **0,371**; GaussianNB tuvo accuracy **0,738** y recall **0,700**.
 Son resultados de un solo período de prueba y no garantizan la misma calidad para hogares de
 Argentina.
 
@@ -26,29 +28,50 @@ que registra el consumo de un hogar en Sceaux, Francia. El proyecto también con
 meteorológicos diarios del mismo lugar, preparados con Open-Meteo. Las fuentes están resumidas en
 [`datos/FUENTES.md`](datos/FUENTES.md).
 
-El notebook y el módulo descargan y preparan el dataset UCI, entrenan los candidatos y presentan
-las métricas. El ZIP se almacena en la caché del usuario. La ejecución requiere las dependencias
-de `requirements.txt` y conexión a Internet la primera vez; no modifica los modelos guardados de
-producción.
+El script [`entrenamiento_modelos.py`](entrenamiento_modelos.py) lee el dataset de
+`datos/crudos/household_power_consumption.txt` (o lo descarga de UCI si no está), lo prepara,
+entrena los candidatos, presenta las métricas y guarda en `modelos/` los dos modelos elegidos en
+validación. El notebook muestra la misma corrida paso a paso.
+
+### 2.1 Reescalado a un hogar argentino
+
+El hogar de Sceaux consume mucho más que uno argentino: la mediana de sus días es **25,92 kWh**
+(unos 786 kWh por mes). Si se usara la meta de 13,3 kWh con esos datos, el 91 % de los días la
+superaría y el clasificador aprendería a responder casi siempre «te pasás».
+
+Por eso toda la energía del hogar (activa, reactiva y submedidores) se multiplica por
+**13,33 ÷ 25,92 ≈ 0,514**. Así la mediana diaria queda en 13,33 kWh: la meta coincide con la
+mediana y la mitad de los días la supera. El voltaje y el factor de potencia no cambian.
+
+Los modelos usados (árboles, GaussianNB y KNN con escalado estándar) no dependen de la unidad de
+los datos. Las métricas de clasificación quedan iguales a las obtenidas con el hogar original y
+su mediana (25,92 kWh), y los errores de regresión quedan multiplicados por 0,514.
+
+### 2.2 Meta
+
+La meta de **400 kWh por mes = 13,33 kWh por día** sale del cuadro tarifario de EDEA
+([Res. MIySP N° 682/2026](https://oceba.gba.gov.ar/nueva_web/adjuntos/ct202609/IF-2026-27778457-GDEBA-GMOCEBA.pdf)):
+el tramo R3 llega hasta 400 kWh. Por encima, la factura pasa al tramo R4, con cargo fijo y precio
+por kWh más altos. Superar la meta tiene así una consecuencia directa en lo que se paga.
 
 ## 3. Descripción de los modelos
 
 ### 3.1 Regresión del consumo
 
-El modelo KNN busca los **25 ejemplos de entrenamiento más parecidos** a la entrada y estima el
+El modelo KNN busca los **50 ejemplos de entrenamiento más parecidos** a la entrada y estima el
 consumo futuro a partir de ellos. El `StandardScaler` incluido en el Pipeline estandariza las
 variables antes de comparar distancias, para que las distintas escalas de medición no dominen la
 comparación.
 
-La app compara la estimación con la meta de 25,9 kWh:
+La app compara la estimación con la meta de 13,3 kWh:
 
 - Por encima de la meta: la regresión indica que se supera el límite.
-- A una distancia igual o menor que el MAE informado (4,57 kWh): el resultado se presenta como
+- A una distancia igual o menor que el MAE informado (2,25 kWh): el resultado se presenta como
   una zona de incertidumbre.
 
-**Evaluación reproducible:** KNN k=25 obtuvo MAE **4,557 kWh**, RMSE **6,041 kWh** y R² **0,304**
-en prueba. El mejor por MAE de validación fue k=50, con MAE **4,372 kWh**, RMSE **5,742 kWh** y
-R² **0,371** en prueba. El `DummyRegressor` obtuvo MAE **6,152 kWh**. El MAE expresa error
+**Evaluación reproducible:** KNN k=50, el mejor por MAE de validación, obtuvo MAE **2,249 kWh**,
+RMSE **2,954 kWh** y R² **0,371** en prueba. KNN k=25 obtuvo MAE **2,345 kWh**, RMSE
+**3,108 kWh** y R² **0,304**. El `DummyRegressor` obtuvo MAE **3,165 kWh**. El MAE expresa error
 absoluto medio en kWh; R² no es probabilidad de acierto.
 
 ### 3.2 Clasificación de exceso
@@ -58,15 +81,15 @@ diferencia de la regresión, entrega directamente una clase, sin calcular primer
 kWh que luego se compare con el límite.
 
 En la prueba cronológica, GaussianNB obtuvo accuracy **0,738**, precision **0,600**, recall
-**0,700** y F1 **0,646**. La matriz de confusión fue TN=2431, FP=778, FN=501 y TP=1168.
+**0,700** y F1 **0,646**. La matriz de confusión fue TN=2430, FP=779, FN=501 y TP=1168.
 El recall deja en evidencia que algunos excesos no son detectados; la exactitud por sí sola no
 describe ese riesgo.
 
-El umbral de exceso se fija en **25,917658 kWh** (referencia que utiliza la aplicación), no se
-ajusta mirando el test. La partición fue temporal: 22.740 casos de entrenamiento, 4.854 de
-validación y 4.878 de prueba. Se purgaron 24 horas entre períodos para evitar solapamiento de
-objetivos y se usaron los mismos casos de prueba para comparar las alertas. Las tasas de exceso
-fueron 49,1 %, 70,5 % y 34,2 % respectivamente, lo que advierte de cambios entre períodos.
+La meta de exceso se fija en **13,33 kWh** antes de evaluar y no se ajusta mirando el test. La
+partición fue temporal: 22.740 casos de entrenamiento, 4.854 de validación y 4.878 de prueba. Se
+purgaron 24 horas entre períodos para evitar solapamiento de objetivos y se usaron los mismos
+casos de prueba para comparar las alertas. Las tasas de exceso fueron 49,1 %, 70,5 % y 34,2 %
+respectivamente, lo que advierte de cambios entre períodos.
 
 Se compararon Dummy, árboles de profundidad 3/6/12/sin límite y KNN k=5/25/50; el escalado se
 ajustó dentro de los Pipelines KNN y solo con entrenamiento. La tabla completa de MAE, RMSE, R²,
@@ -80,20 +103,20 @@ ponderación explícita, no una valoración monetaria.
 
 | Sistema aplicado a los mismos 4.878 casos de prueba | Accuracy | Precision | Recall | F1 | TN | FP | FN | TP | Costo |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Regresión KNN k=50 + umbral | 0,735 | 0,621 | 0,577 | 0,598 | 2621 | 588 | 706 | 963 | 2706 |
-| GaussianNB directo | 0,738 | 0,600 | 0,700 | 0,646 | 2431 | 778 | 501 | 1168 | 2281 |
+| Regresión KNN k=50 + meta | 0,735 | 0,621 | 0,577 | 0,598 | 2621 | 588 | 706 | 963 | 2706 |
+| GaussianNB directo | 0,738 | 0,600 | 0,700 | 0,646 | 2430 | 779 | 501 | 1168 | 2282 |
 
 Las alertas coincidieron en 83,8 % de los casos. Con el costo elegido y en este período, el
 clasificador directo conviene más: detecta más excesos y su costo observado es menor, aunque
 produce más falsas alarmas. No se recomienda como decisión automática por el cambio temporal de
 la tasa de excesos (34,2 % en test frente a 70,5 % en validación).
 
-El 4/6/2010 a las 13 h el consumo real fue 25,932 kWh, apenas 0,014 kWh sobre el umbral; ambas
-alertas no detectaron el exceso. El 17/10/2010 a las 22 h el real fue 44,667 kWh y la regresión
-estimó 18,216 kWh. El 21/11/2010 a las 7 h el real fue 14,882 kWh y la regresión estimó
-40,035 kWh. También hubo un falso positivo cercano: el 12/5/2010 a las 23 h el real fue
-25,906 kWh (0,012 kWh por debajo del umbral) y GaussianNB indicó exceso. El notebook incluye
-las listas de errores y casos próximos al umbral.
+El 4/6/2010 a las 13 h el consumo real fue 13,341 kWh, apenas 0,007 kWh sobre la meta; ambas
+alertas no detectaron el exceso. El 17/10/2010 a las 22 h el real fue 22,979 kWh y la regresión
+estimó 9,371 kWh. El 21/11/2010 a las 7 h el real fue 7,656 kWh y la regresión estimó
+20,596 kWh. También hubo un falso positivo cercano: el 12/5/2010 a las 23 h el real fue
+13,327 kWh (0,006 kWh por debajo de la meta) y GaussianNB indicó exceso. El notebook incluye
+las listas de errores y casos próximos a la meta.
 
 ## 4. Variables que recibe la aplicación
 
@@ -106,8 +129,8 @@ medidor doméstico que las registre.
 | `kwh_h` | Consumo estimado de la hora seleccionada, según la curva de la casa; si se parte de una factura, se ajusta al consumo diario facturado. |
 | `active_24` | Consumo diario de la casa o consumo de la factura dividido por los días del período. |
 | `active_prevweek` | Se aproxima con el mismo consumo diario actual porque la app no tiene historial de la semana anterior. |
-| `reactive_24` | Se deriva del consumo activo suponiendo un factor de potencia de 0,95. |
-| `cosphi_24` | Valor fijo de 0,95; no se mide en la casa. |
+| `reactive_24` | Valor típico del dataset reescalado: 1,5 kVArh por día (en el hogar casi no cambia con el consumo). |
+| `cosphi_24` | Se calcula como en el entrenamiento: `active_24 / sqrt(active_24² + reactive_24²)`. |
 | `sub1_24` | Consumo diario agrupado para cocina. |
 | `sub2_24` | Consumo diario agrupado para lavadero, heladera y luces. |
 | `sub3_24` | Consumo diario agrupado para termotanque y climatización. |
@@ -129,41 +152,34 @@ guardados; la aplicación no vuelve a entrenar los modelos.
 La app muestra ambas respuestas y las combina en un semáforo:
 
 - **Rojo:** ambos modelos indican que se supera la meta.
-- **Amarillo:** las respuestas difieren o la regresión queda dentro de 4,57 kWh de la meta.
+- **Amarillo:** las respuestas difieren o la regresión queda dentro de 2,25 kWh de la meta.
 - **Verde:** ambos indican que no se supera la meta y la regresión está fuera de esa zona gris.
+
+Con los perfiles de la app, una persona sola o una pareja dan verde todo el año; un hogar de
+unos 320 kWh por mes da rojo en invierno (calefactor) y verde o amarillo el resto del año; una
+familia con termotanque y calefactor eléctricos da rojo casi todo el año.
 
 El semáforo facilita la lectura, pero no sustituye las predicciones individuales ni convierte la
 estimación en una garantía. La lógica está en
 [`simulador/prediccion.py`](simulador/prediccion.py) y
 [`simulador/vista_prediccion.py`](simulador/vista_prediccion.py).
 
-## 6. Limitaciones y riesgos de interpretación
+## 6. Mejoras pendientes
 
-1. **Un solo hogar y otro contexto.** Los patrones de Sceaux no representan necesariamente los de
-   hogares argentinos. La diferencia de clima, vivienda, equipamiento y hábitos puede reducir la
-   precisión.
-2. **Meta poco representativa localmente.** Los 25,9 kWh diarios reflejan el consumo típico del
-   hogar de referencia y pueden ser altos para muchas casas de Argentina.
-3. **Datos aproximados.** El historial semanal, la energía reactiva, el factor de potencia y el
-   voltaje no se miden en la casa del usuario; se completan con valores asumidos o constantes. Las
-   temperaturas también dependen de la entrada manual.
-4. **Problema documentado en el clasificador.** El proyecto registra que usar `cosphi_24 = 0,95`
-   puede hacer que GaussianNB responda «no te pasás» casi siempre, incluso en situaciones de
-   exceso. En una prueba documentada con la casa Familia en julio, la probabilidad estimada de
-   «sí» fue 0 % con 0,95, frente a 95 % con 0,98 y 99,9 % con 0,99. Por lo tanto, el clasificador
-   y el semáforo deben interpretarse con cautela hasta corregir esta entrada. El detalle está en
-   [`README_PENDIENTES.md`](README_PENDIENTES.md).
-5. **Límite inferior de las predicciones de regresión.** El proyecto también señala que KNN no
-   predice por debajo de los valores bajos observados durante el entrenamiento. Para consumos muy
-   inferiores al hogar de referencia puede sobreestimar el consumo.
-6. **Cambio entre períodos.** La proporción de excesos varía entre entrenamiento, validación y
-   prueba. El conjunto representa un hogar y una serie temporal concretos, por lo que la calidad
-   puede cambiar en otras estaciones y viviendas.
+| Qué falla hoy | Cómo mejorarlo |
+|---|---|
+| En verano el modelo estima de menos: el hogar de Francia no tenía aire acondicionado | Entrenar con un hogar que use aire o sumar una variable de temperatura alta |
+| Aprendió de un solo hogar | Sumar más hogares: otros datasets públicos o el historial bimestral de facturas reales de EDEA |
+| Los feriados del entrenamiento son franceses | Reentrenar marcando los feriados argentinos |
+| El consumo de la semana anterior, la energía reactiva y el voltaje se completan con valores típicos | Guardar el historial de la casa y estimar la reactiva por electrodoméstico |
+| La temperatura se carga a mano | Traer la temperatura y el pronóstico desde Open-Meteo |
+| KNN sobreestima casas de muy poco consumo | Comparar en validación un modelo que extrapole (regresión lineal o árbol) |
+| La proporción de excesos cambia entre períodos (49 %, 70 % y 34 %) | Evaluar con validación por estaciones para ver en qué época falla más |
 
 ## 7. Conclusión
 
 Los dos modelos ofrecen enfoques complementarios: KNN estima energía y GaussianNB clasifica si se
 supera la meta. En esta evaluación, la alerta directa del clasificador tiene menor costo ponderado
 que derivar la alerta de la regresión, pero existen falsos negativos, falsos positivos y cambio de
-distribución entre períodos. Ambos dependen de datos de un hogar francés y supuestos de entrada;
-sus resultados son **orientativos**, no una medición ni una garantía para una vivienda argentina.
+distribución entre períodos. Las mejoras de la sección 6 apuntan a que el modelo aprenda de hogares
+con aire acondicionado y de más de una casa.

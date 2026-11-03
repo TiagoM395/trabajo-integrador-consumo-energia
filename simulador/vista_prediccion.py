@@ -14,10 +14,13 @@ from simulador import prediccion as P
 from simulador.estado import fmt
 
 NOMBRE_FUENTE = {"casa": "🏠 Mi casa", "factura": "🧾 Mi factura"}
+# Cuadro tarifario de EDEA (OCEBA): el tramo R3 llega hasta 400 kWh por mes.
+FUENTE_META = "https://oceba.gba.gov.ar/nueva_web/adjuntos/ct202609/IF-2026-27778457-GDEBA-GMOCEBA.pdf"
 
 
 @st.cache_resource
-def _modelos():
+def _modelos(version: tuple):
+    # La versión (fecha de los .pkl) hace que un modelo reentrenado se cargue sin reiniciar la app.
     return P.cargar()
 
 
@@ -33,7 +36,8 @@ def _explicacion() -> None:
                        "**Clasificación:** responde directamente si te pasás de la meta, sí o no.")
         with p3:
             st.markdown("**③ El resultado**")
-            st.caption("Las dos respuestas se comparan con la **meta diaria de 25,9 kWh**.  \n"
+            st.caption("Las dos respuestas se comparan con la **meta diaria de 13,3 kWh** (400 kWh por cuota: el "
+                       f"límite del tramo R3 de EDEA, [Res. MIySP N° 682/2026]({FUENTE_META})).  \n"
                        "🟢 no te pasás · 🟡 estás cerca o no coinciden · 🔴 te pasás")
 
 
@@ -93,8 +97,11 @@ def seccion() -> None:
 
     fila, ajustes = P.armar_entrada(kwh_dia=kwh_dia, kwh_hora=kwh_hora, subs=subs, fecha=fecha, hora=hora,
                                     temp_hoy=temp_hoy, temp_manana=temp_man, feriado=feriado)
-    reg, clf = _modelos()
+    reg, clf = _modelos(P.version())
     res = P.predecir(reg, clf, fila)
+    # Si todos los días fueran como mañana: una cuota de la factura de EDEA (un mes de los dos que se leen).
+    mes_kwh = max(res["kwh"], 0) * C.DIAS_MES[m]
+    costo = C.factura(mes_kwh, s["tarifas"], E.escenario())["total"]
     st.session_state["pred-ultima"] = {"fila": fila, "ajustes": ajustes, "res": res}
 
     # ---------- Resultado ----------
@@ -110,11 +117,27 @@ def seccion() -> None:
       <div class="hero-top"><div class="hero-marca">
         <div class="hero-logo" style="background:{color}2e;border:2px solid {color};box-shadow:0 0 0 6px {color}22">{icono}</div>
         <div><h1>{titulo}</h1>
-        <p>Hoy tu casa usa <b>{fmt(kwh_dia, 1)} kWh</b> por día
-           ({'según lo que armaste' if fuente == 'casa' else 'según tu factura'}).
-           En las próximas 24 horas vas a usar unos <b>{fmt(res['kwh'], 1)} kWh</b> (± {fmt(res['mae'], 1)} kWh).
-           La meta diaria es <b>{fmt(res['meta'], 1)} kWh</b>.</p></div></div></div>
+        <p>Lo que vas a usar en las próximas 24 horas, comparado con la meta
+           ({'según lo que armaste en Mi casa' if fuente == 'casa' else 'según tu factura'}).</p></div></div></div>
+      <div class="pred-stats">
+        <div><span>Hoy</span><b>{fmt(kwh_dia, 1)} kWh</b><small>por día</small></div>
+        <div><span>Mañana (estimado)</span><b>{fmt(res['kwh'], 1)} kWh</b><small>± {fmt(res['mae'], 1)} kWh</small></div>
+        <div><span>Meta</span><b>{fmt(res['meta'], 1)} kWh</b><small>por día · {fmt(res['meta'] * 30)} kWh por cuota</small></div>
+        <div><span>Si seguís así, en un mes</span><b>{fmt(mes_kwh)} kWh</b><small>{fmt(2 * mes_kwh)} kWh en los 2 meses que lee EDEA</small></div>
+      </div>
     </div>""")
+
+    # Lo que vas a pagar: EDEA lee el medidor cada 2 meses y lo cobra en 2 cuotas iguales (un mes cada una).
+    cuota = round(costo, 2)
+    with st.container(border=True):
+        st.markdown("**Lo que vas a pagar si seguís así**")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("1ª cuota", f"$ {fmt(cuota, 2)}", border=False)
+        c2.metric("2ª cuota", f"$ {fmt(cuota, 2)}", border=False)
+        c3.metric("Total de los 2 meses", f"$ {fmt(2 * cuota, 2)}", border=False)
+        st.caption(f"Cada cuota cobra un mes: {fmt(mes_kwh)} kWh (lo estimado para mañana × {C.DIAS_MES[m]} días). "
+                   "Las dos cuotas son iguales porque EDEA lee el medidor una vez cada 2 meses y divide ese "
+                   "consumo por la mitad.")
 
     izq, der = st.columns(2, gap="medium")
     with izq.container(border=True, height="stretch"):
@@ -140,18 +163,4 @@ def seccion() -> None:
             mayor = max(subs, key=subs.get)
             st.markdown(f"- **{P.NOMBRE_SUB[mayor]}** es el {fmt(subs[mayor] / kwh_dia * 100)} % de tu consumo "
                         "diario: ahí está el mayor margen para ahorrar.")
-        mes_kwh = max(res["kwh"], 0) * C.DIAS_MES[m]
-        costo = C.factura(mes_kwh, s["tarifas"], E.escenario())["total"]
-        st.markdown(f"- Si todos los días fueran como mañana, serían **{fmt(mes_kwh)} kWh por mes**: unos "
-                    f"**\\$ {fmt(costo)}** con tu tarifa de EDEA.")
         st.markdown("- Cómo se entrenaron y evaluaron los modelos está en la pestaña **Análisis**.")
-
-    with st.expander("Limitaciones", icon=":material/warning:"):
-        st.markdown(
-            "- Los modelos aprendieron con **un solo hogar** (Sceaux, Francia, 2006–2010). En otra casa la "
-            "predicción es menos precisa.\n"
-            "- La meta de 25,9 kWh por día es el consumo típico de ese hogar, más alto que el de muchos hogares "
-            "de acá.\n"
-            "- Algunos datos que el modelo necesita no los mide nadie en la casa (voltaje, energía reactiva, "
-            "consumo de la semana anterior) y se completan con valores típicos.\n"
-            "- Es una estimación: no reemplaza la medición del medidor ni la factura.")

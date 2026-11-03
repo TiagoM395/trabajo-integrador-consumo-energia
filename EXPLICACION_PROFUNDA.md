@@ -41,7 +41,7 @@ Los dos modelos de aprendizaje automático del paso 4 tienen su propio README:
 
 | Modelo | Archivo | Explicación detallada |
 |---|---|---|
-| **Regresión** (KNN k=25): cuántos kWh vas a usar en las próximas 24 h | [`modelos/reg_24h.pkl`](modelos/reg_24h.pkl) | [`README_MODELO_REGRESION.md`](explicaciones/README_MODELO_REGRESION.md) |
+| **Regresión** (KNN k=50): cuántos kWh vas a usar en las próximas 24 h | [`modelos/reg_24h.pkl`](modelos/reg_24h.pkl) | [`README_MODELO_REGRESION.md`](explicaciones/README_MODELO_REGRESION.md) |
 | **Clasificación** (GaussianNB): ¿te pasás de la meta, sí o no? | [`modelos/clf_me_paso.pkl`](modelos/clf_me_paso.pkl) | [`README_MODELO_CLASIFICACION.md`](explicaciones/README_MODELO_CLASIFICACION.md) |
 
 Arriba de *Mi casa*, *Ambiente 3D* y *Factura* aparece el recuadro **Resumen de tu casa**: consumo
@@ -72,16 +72,22 @@ del mes, lo que pagarías, el ahorro con subsidio y el consumo en espera.
 | Siempre encendido | Router | potencia × 24 h × 30 |
 
 La **factura** se arma con el cuadro tarifario oficial de EDEA (tramos R1 a R7, cargo fijo, Cargo
-Transición Tarifaria e impuestos). El subsidio cambia el **precio**, no los kWh. La plata de cada
-electrodoméstico es su parte de la factura: kWh del equipo × (total de la factura ÷ kWh de la casa).
+Transición Tarifaria e impuestos: IVA 21 %, Ley 10740 18 % y tasas provinciales y municipales, 54,5 % en
+total sin subsidio). En el paso 3 de *Mi casa* la factura aparece renglón por renglón, como la boleta.
+El subsidio cambia el **precio**, no los kWh. La plata de cada
+electrodoméstico vale sus kWh × el precio promedio del kWh (el de una casa típica de 300 kWh, con impuestos).
 
 **Predicción (paso 4 de Mi casa).** La app **carga** los modelos ya entrenados (no entrena nada) y
 arma sus 16 variables con lo que cargaste en la casa o en la factura:
 
 | Modelo | Qué responde | Resultado en prueba |
 |---|---|---|
-| Regresión: KNN k=25 (StandardScaler en un Pipeline) | ¿Cuántos kWh vas a usar en las próximas 24 h? | MAE 4,57 kWh · R² 0,31 |
-| Clasificación: GaussianNB | ¿Te pasás de la meta diaria (25,9 kWh)? | Accuracy 0,74 · Recall 0,63 |
+| Regresión: KNN k=50 (StandardScaler en un Pipeline) | ¿Cuántos kWh vas a usar en las próximas 24 h? | MAE 2,25 kWh · R² 0,37 |
+| Clasificación: GaussianNB | ¿Te pasás de la meta diaria (13,3 kWh)? | Accuracy 0,74 · Recall 0,70 |
+
+La meta es **13,3 kWh por día = 400 kWh por mes**, el límite del tramo R3 de EDEA (Res. MIySP
+N° 682/2026). El dataset del hogar francés se reescaló × 0,514 para que consuma como una casa
+argentina y la mitad de sus días supere la meta.
 
 El resultado es un semáforo: 🟢 no te pasás · 🟡 estás cerca o los modelos no se ponen de acuerdo
 · 🔴 te pasás. Cómo se prepararon los datos y se entrenaron los modelos está en la pestaña
@@ -165,7 +171,8 @@ propuesta:
 | 5.2 — enero (4 electrodomésticos) | 296,4 kWh | 296,4 kWh ✅ |
 | 5.2 — año | 2.392,1 kWh | 2.392,1 kWh ✅ |
 | 6.3 — 400 kWh sin subsidio / nacional / provincial | $ 78.650 / 53.240 / 45.617 | iguales ✅ |
-| Factura de EDEA, 273 kWh sin subsidio | $ 103.118 (cuenta a mano) | igual ✅ |
+| Factura de EDEA, 273 kWh sin subsidio | $ 116.716 (cuenta a mano, impuestos 54,501 %) | igual ✅ |
+| Impuestos de una boleta real (subtotal $ 41.383,55) | $ 22.554,45 | igual ✅ |
 
 ---
 
@@ -173,10 +180,11 @@ propuesta:
 
 - **Horas de uso y valores típicos:** el cálculo depende de lo que se carga. Para comparar con la
   realidad está la factura.
-- **Modelos:** aprendieron de **un solo hogar** (Sceaux, Francia, 2006–2010). La meta de 25,9 kWh
-  por día es alta para muchos hogares de acá. Algunos datos que piden los modelos (voltaje, energía
-  reactiva, consumo de la semana anterior) se completan con valores típicos; están listados en
-  *Análisis*, sección 3.
+- **Modelos:** aprendieron de **un solo hogar** (Sceaux, Francia, 2006–2010), reescalado al nivel
+  de consumo de una casa argentina. En Francia el verano es la época de menos consumo, así que en
+  verano el modelo tiende a estimar menos de lo que gasta una casa de acá con aire. Algunos datos
+  que piden los modelos (voltaje, energía reactiva, consumo de la semana anterior) se completan con
+  valores típicos del dataset; están listados en *Análisis*, sección 6.
 - **Tarifas:** cuadro oficial de EDEA para consumos desde el 1/9/2026. Cuando salga uno nuevo, se
   regeneran con `python datos/preparar_tarifas.py`.
 - **Valores estándar:** los de heladera, freezer, aire y TV vienen del registro de Australia y Nueva
@@ -218,8 +226,9 @@ Facturación EDEA: tramos R1-R7, cargo fijo, Cargo Transición Tarifaria, impues
 
 ## 6) Predicción (paso 4 Mi casa)
 Carga modelos entrenados (solo predict):
-- Regresión reg_24h.pkl (KNN k=25, StandardScaler): predice kWh próximos 24h. MAE 4,57 kWh, R² 0,31.
-- Clasificación clf_me_paso.pkl (GaussianNB): ¿me paso de meta diaria (25,9 kWh)? Accuracy 0,74, Recall 0,63.
+- Regresión reg_24h.pkl (KNN k=50, StandardScaler): predice kWh próximos 24h. MAE 2,25 kWh, R² 0,37.
+- Clasificación clf_me_paso.pkl (GaussianNB): ¿me paso de meta diaria (13,3 kWh = 400 kWh/mes, tramo R3 de EDEA)? Accuracy 0,74, Recall 0,70.
+- Dataset UCI reescalado × 0,514 a un hogar argentino; los modelos se generan con entrenamiento_modelos.py.
 
 Arma 16 variables combinando casa/factura con valores típicos cuando faltan. Semáforo verde/amarillo/rojo según acuerdo y cercanía.
 
@@ -240,7 +249,7 @@ Arma 16 variables combinando casa/factura con valores típicos cuando faltan. Se
 - Modelos UCI Individual Household Electric Power Consumption (CC BY 4.0), clima_sceaux.csv Open-Meteo.
 
 ## 10) Limitaciones
-- Modelos de un solo hogar francés 2006-2010; meta 25,9 kWh/día alta para muchos hogares AR.
+- Modelos de un solo hogar francés 2006-2010, reescalado a consumo argentino; en verano tienden a estimar de menos (en Francia no hay aire).
 - Algunos features con valores típicos.
 - Valores estándar heladera/freezer/aire/TV de Australia/NZ (no IRAM AR).
 - OCR puede fallar con fotos malas; PDF digital más preciso.

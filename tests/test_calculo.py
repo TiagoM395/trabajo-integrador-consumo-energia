@@ -55,30 +55,55 @@ class TestSimulador(unittest.TestCase):
     # ---- Cuadro real de EDEA (Res. MIySP 682/2026, consumos desde 1/9/2026) ----
 
     def test_edea_sin_subsidio_273_kwh(self):
-        # Tramo R3 (200 < kWh ≤ 400): cargo fijo 8.795,20 + 273 × (226,995 + CTT 17,506), + 36,501 % de impuestos
+        # Tramo R3 (200 < kWh ≤ 400): cargo fijo 8.795,20 + 273 × (226,995 + CTT 17,506), + 54,501 % de impuestos
         subtotal = 8795.20 + 273 * 226.995 + 273 * 17.506
         f = C.factura(273, C.tarifas_edea(), "sin_subsidio")
         self.assertEqual(f["tramo"], "R3")
-        self.assertAlmostEqual(f["total"], subtotal * 1.36501, delta=0.01)
+        self.assertAlmostEqual(f["total"], subtotal * 1.54501, delta=0.01)
 
     def test_edea_sef_bloque_150(self):
         # Primeros 150 kWh a 142,9395 (+ CTT 7,445); los 123 restantes a 226,995 (+ CTT 17,506)
         subtotal = 8795.20 + 150 * (142.9395 + 7.445) + 123 * (226.995 + 17.506)
+        # Con SEF el Decreto-Ley 7290 baja a 0,01 %: impuestos 50,511 %
         f = C.factura(273, C.tarifas_edea(), "sef")
-        self.assertAlmostEqual(f["total"], subtotal * 1.36501, delta=0.01)
+        self.assertAlmostEqual(f["total"], subtotal * 1.50511, delta=0.01)
         self.assertEqual((f["dentro"], f["fuera"]), (150, 123))
 
     def test_edea_tarifa_social(self):
-        # R3: primeros 150 a 195,1135 y el resto a 226,995; CTT 2,987; bonificación 8.000; impuestos 32,511 %
+        # R3: primeros 150 a 195,1135 y el resto a 226,995; CTT 2,987; bonificación 8.000; impuestos 50,511 %
         subtotal = 8795.20 + 150 * 195.1135 + 123 * 226.995 + 273 * 2.987 - 8000
         f = C.factura(273, C.tarifas_edea(), "tarifa_social")
-        self.assertAlmostEqual(f["total"], subtotal * 1.32511, delta=0.01)
+        self.assertAlmostEqual(f["total"], subtotal * 1.50511, delta=0.01)
 
     def test_edea_tramo_r1(self):
         subtotal = 4184.62 + 80 * (211.103 + 17.506)
         f = C.factura(80, C.tarifas_edea(), "sin_subsidio")
         self.assertEqual(f["tramo"], "R1")
-        self.assertAlmostEqual(f["total"], subtotal * 1.36501, delta=0.01)
+        self.assertAlmostEqual(f["total"], subtotal * 1.54501, delta=0.01)
+
+    def test_detalle_factura_suma_el_total(self):
+        t = C.tarifas_edea()
+        for esc in ("sin_subsidio", "sef", "tarifa_social", "tarifa_social_sef"):
+            for kwh in (0, 80, 150, 273, 450, 900):
+                d = C.detalle_factura(kwh, t, esc)
+                f = C.factura(kwh, t, esc)
+                cargos = sum(c["monto"] for c in d["cargos"])
+                impuestos = sum(i["monto"] for i in d["impuestos"])
+                self.assertAlmostEqual(cargos, f["subtotal"], delta=0.01, msg=f"{esc} {kwh}")
+                self.assertAlmostEqual(cargos + impuestos, f["total"], delta=0.01, msg=f"{esc} {kwh}")
+
+    def test_impuestos_como_en_la_boleta_real(self):
+        # Boleta real de EDEA sin subsidio (N1), subtotal $ 41.383,55: IVA 8.690,55 · Ley 10740 7.449,04 ·
+        # art. 75 2.483,01 · Fdo. Comp. 2.276,10 · Ley 7290 1.655,34 · art. 74 0,41 → impuestos 22.554,45
+        imp = dict(C.tarifas_edea()["escenarios"]["sin_subsidio"]["impuestos"])
+        subtotal = 41383.55
+        self.assertAlmostEqual(subtotal * imp["Ley 10740"] / 100, 7449.04, delta=0.01)
+        self.assertAlmostEqual(subtotal * imp["IVA"] / 100, 8690.55, delta=0.01)
+        self.assertAlmostEqual(subtotal * sum(imp.values()) / 100, 22554.45, delta=0.5)
+        # Con subsidio nacional (N3/SEF) el Decreto-Ley 7290 es 0,01 % (boleta: 5,18 sobre 51.750,20)
+        sef = dict(C.tarifas_edea()["escenarios"]["sef"]["impuestos"])
+        self.assertAlmostEqual(51750.20 * sef["Decreto-Ley 7290 (Fondo de Desarrollo Eléctrico Provincial)"] / 100,
+                               5.18, delta=0.01)
 
     def test_edea_subsidios_pagan_menos(self):
         t = C.tarifas_edea()
@@ -91,16 +116,16 @@ class TestSimulador(unittest.TestCase):
 
     def test_precio_fijo(self):
         t = C.tarifas_edea()
-        # Sin subsidio: casa de referencia de 300 kWh (R3) → (226,995 + 17,506) × 1,36501
+        # Sin subsidio: casa de referencia de 300 kWh (R3) → (226,995 + 17,506) × 1,54501
         p = C.precio_kwh(t, "sin_subsidio")
         self.assertEqual(p["tramo"], "R3")
-        self.assertAlmostEqual(p["precio"], 333.75, delta=0.01)
-        self.assertAlmostEqual(p["cargo_fijo"], 8795.20 * 1.36501, delta=0.01)
+        self.assertAlmostEqual(p["precio"], 377.76, delta=0.01)
+        self.assertAlmostEqual(p["cargo_fijo"], 8795.20 * 1.54501, delta=0.01)
         # SEF: 150 kWh subsidiados + 150 a precio pleno, con su CTT, promediados
-        sef = (150 * (142.9395 + 7.445) + 150 * (226.995 + 17.506)) / 300 * 1.36501
+        sef = (150 * (142.9395 + 7.445) + 150 * (226.995 + 17.506)) / 300 * 1.50511
         self.assertAlmostEqual(C.precio_kwh(t, "sef")["precio"], sef, delta=0.01)
         # Tarifa social: el cargo fijo va neto del descuento fijo
-        self.assertAlmostEqual(C.precio_kwh(t, "tarifa_social")["cargo_fijo"], (8795.20 - 8000) * 1.32511, delta=0.01)
+        self.assertAlmostEqual(C.precio_kwh(t, "tarifa_social")["cargo_fijo"], (8795.20 - 8000) * 1.50511, delta=0.01)
         # Con subsidio, cada kWh sale más barato
         for esc in ("sef", "tarifa_social", "tarifa_social_sef"):
             self.assertLess(C.precio_kwh(t, esc)["precio"], p["precio"])

@@ -134,19 +134,23 @@ with izq:
 
 # ---------- Resumen ----------
 with der:
-    st.markdown("### 3 · Lo que gastás por mes")
+    st.markdown("### 3 · Tu factura de EDEA")
     mm = r["meses"][m]
     esc = s["tarifas"]["escenarios"][E.escenario()]
-    fac = r["costos"][E.escenario()]["porMes"][m]  # factura real de EDEA, con tramos (referencia)
-    cc = E.costo(r)  # suma de las cards + consumo de base + cargo fijo
+    # Como la boleta de EDEA: el medidor se lee cada 2 meses y se cobra en 2 cuotas iguales.
+    # Cada cuota es un mes de tu casa: cargo fijo, consumo, subsidio e impuestos.
+    det = E.C.detalle_factura(mm["total"], s["tarifas"], E.escenario())
+    fac = det["factura"]
+    dias_m = E.C.DIAS_MES[m]
     with st.container(border=True):
         c1, c2 = st.columns(2, vertical_alignment="center")
-        c1.metric("💲 Tu casa gasta por mes", f"$ {fmt(cc['total'])}", border=False)
-        c2.metric("⚡ Energía por mes", f"{fmt(mm['total'], 1)} kWh", border=False)
-        st.caption(f"Suma de tus electrodomésticos y del consumo de base: {fmt(mm['total'], 1)} kWh × "
-                   f"\\$ {fmt(cc['precio'], 2)} = \\$ {fmt(cc['energia'])}, más el cargo fijo "
-                   f"\\$ {fmt(cc['cargo_fijo'])} ({esc['corto']}, con impuestos).  \n"
-                   f"Factura de EDEA con sus tramos: **\\$ {fmt(fac['total'])}** (tramo {fac.get('tramo', '—')}).")
+        c1.metric("💲 Cada cuota", f"$ {fmt(fac['total'], 2)}", border=False,
+                  help="EDEA lee el medidor cada 2 meses y lo cobra en 2 cuotas iguales.")
+        c2.metric(f"⚡ Consumo en 2 meses ({2 * dias_m} días)", f"{fmt(2 * mm['total'], 1)} kWh", border=False)
+        st.caption(f"2 cuotas de \\$ {fmt(fac['total'], 2)}: **\\$ {fmt(2 * round(fac['total'], 2), 2)}** cada 2 meses.")
+        ui.factura_detalle(det, esc)  # conceptos e impuestos de una cuota; la boleta completa está en Factura
+        st.caption("El tramo se elige por el consumo de cada cuota. Lo que figura en cada electrodoméstico usa el "
+                   f"precio promedio del kWh (\\$ {fmt(ef, 2)} con impuestos), sin el cargo fijo.")
 
     with st.container(border=True):
         c1, c2 = st.columns([0.45, 0.55], vertical_alignment="center")
