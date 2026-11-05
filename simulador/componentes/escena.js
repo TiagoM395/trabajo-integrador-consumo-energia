@@ -3,6 +3,8 @@
 (function (root) {
   const TW = 56, TH = 28, ZH = 24;
   const ANCHO = 16, FONDO = 16, ALTO = 5.6;
+  // Franja de día que dibuja la ventana (amanecer y atardecer). La barra de horario usa el mismo corte.
+  const DIA_INICIO = 6, DIA_FIN = 19;
   const OX = FONDO * TW / 2 + 24;
   const OY = ALTO * ZH + 50;  // margen justo para la copa del árbol
   const VW = (ANCHO + FONDO) * TW / 2 + 48;
@@ -280,10 +282,11 @@
 
       const win = [iso(6.5, 0, 2.2), iso(9.6, 0, 2.2), iso(9.6, 0, 4.6), iso(6.5, 0, 4.6)];
       s += `<polygon points="${pts(win)}" fill="url(#cielo)" class="ventana"/>`;
-      if (hora > 6 && hora < 19) {
+      if (hora > DIA_INICIO && hora < DIA_FIN) {
         const [cloudX, cloudY] = iso(7.25, 0, 3.95);
         s += `<g class="nube"><ellipse cx="${cloudX}" cy="${cloudY}" rx="15" ry="5"/><ellipse cx="${cloudX + 10}" cy="${cloudY - 4}" rx="9" ry="7"/><ellipse cx="${cloudX + 20}" cy="${cloudY}" rx="13" ry="5"/></g>`;
-        const sx = 6.8 + ((hora - 6) / 13) * 2.5, sz = 2.6 + Math.sin(((hora - 6) / 13) * Math.PI) * 1.7;
+        const avance = (hora - DIA_INICIO) / (DIA_FIN - DIA_INICIO);
+        const sx = 6.8 + avance * 2.5, sz = 2.6 + Math.sin(avance * Math.PI) * 1.7;
         const [cx, cy] = iso(sx, 0, sz);
         s += `<circle cx="${cx}" cy="${cy}" r="6" class="sol"/>`;
       } else {
@@ -441,5 +444,5 @@
     return { x: Math.max(0, (ANCHO - hu.w) / 2), y: pared ? 0 : Math.max(0, (FONDO - hu.d) / 2) };
   }
 
-  root.SimEscena = { crear, huella, lugarLibre, ANCHO, FONDO };
+  root.SimEscena = { crear, huella, lugarLibre, ANCHO, FONDO, DIA_INICIO, DIA_FIN };
 })(window);

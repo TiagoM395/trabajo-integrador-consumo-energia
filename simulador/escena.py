@@ -149,7 +149,7 @@ def escena(r: dict) -> None:
         data={
             "ambiente": amb, "objetos": objetos, "seleccion": s.get("seleccion"),
             "ambientes": [{"id": a["id"], "nombre": a["nombre"], "icono": a["icono"]} for a in E.D["AMBIENTES"]],
-            "base_kw": s["base_w"] / 1000 * r["ajuste"], "hora": 13.0,
+            "base_kw": s["base_w"] / 1000 * r["ajuste"], "tarifa": ef, "hora": 13.0,
             "resumen": f"{E.fmt(total_amb)} kWh/mes · $ {E.fmt(total_amb * ef)}",
         },
         on_mover_change=_al_mover,
