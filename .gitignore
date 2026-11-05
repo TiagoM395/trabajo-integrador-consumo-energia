@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 .streamlit/secrets.toml
 sesiones/
+/Demo/Demo de la app.zip
 
 # Boletas reales (tienen datos personales)
 boletas/

@@ -77,6 +77,10 @@ const hhmm = (h) => {
   const t = Math.round((((h % 24) + 24) % 24) * 60);
   return `${String(Math.floor(t / 60) % 24).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 };
+// Mismo corte que usa la ventana de la escena para dibujar el sol y la luna.
+const DIA_INICIO = (window.SimEscena && window.SimEscena.DIA_INICIO) ?? 6;
+const DIA_FIN = (window.SimEscena && window.SimEscena.DIA_FIN) ?? 19;
+const esDia = (h) => h >= DIA_INICIO && h < DIA_FIN;
 
 function construir(raiz, st) {
   raiz.innerHTML = `
@@ -95,14 +99,33 @@ function construir(raiz, st) {
       <button type="button" class="play" aria-label="Reproducir el día">▶</button>
       <div class="c">
         <div class="l"><span class="hora"></span><span class="w"></span></div>
+        <div class="mapa" role="group" aria-label="Mapa de consumo por hora. Tocá una hora para saltar."></div>
         <input type="range" min="0" max="23.99" step="0.05" aria-label="Hora del día">
+        <div class="metricas">
+          <div class="met dia" title="Consumo estimado del día (06:00 a 19:00) en este ambiente">
+            <span class="met-t">☀ Día <small>6–19 h</small></span>
+            <b class="met-v">—</b>
+            <span class="met-s"></span>
+          </div>
+          <div class="met noche" title="Consumo estimado de la noche (19:00 a 06:00) en este ambiente">
+            <span class="met-t">🌙 Noche <small>19–6 h</small></span>
+            <b class="met-v">—</b>
+            <span class="met-s"></span>
+          </div>
+        </div>
+        <div class="picos" aria-live="polite"></div>
       </div>
+      <div class="tip" role="tooltip"></div>
     </div>
-    <p class="ayuda">Arrastrá muebles y artefactos · tocá uno para editarlo · <b>R</b> rota · flechas mueven · ▶ simula el día y la noche.</p>`;
+    <p class="ayuda">Arrastrá muebles y artefactos · tocá uno para editarlo · <b>R</b> rota · flechas mueven · ▶ simula el día y la noche · tocá el mapa para ir a una hora.</p>`;
   st.el = {
     titulo: raiz.querySelector('.titulo'), lienzo: raiz.querySelector('.lienzo'), play: raiz.querySelector('.play'),
     hora: raiz.querySelector('.hora'), w: raiz.querySelector('.w'), rango: raiz.querySelector('input'),
+    reloj: raiz.querySelector('.reloj'), mapa: raiz.querySelector('.mapa'), tip: raiz.querySelector('.tip'),
+    metDia: raiz.querySelector('.met.dia'), metNoche: raiz.querySelector('.met.noche'), picos: raiz.querySelector('.picos'),
   };
+  st.el.mapa.innerHTML = Array.from({ length: 24 }, (_, h) =>
+    `<button type="button" class="celda" data-h="${h}" aria-label="Hora ${hhmm(h)}"></button>`).join('');
   raiz.querySelectorAll('[data-vista]').forEach((b) => b.addEventListener('click', () => { st.vista = b.dataset.vista; pintar(st); }));
   // Panel izquierdo: rotar o eliminar el objeto seleccionado.
   raiz.querySelector('.accion').addEventListener('click', (e) => {
@@ -114,6 +137,30 @@ function construir(raiz, st) {
     if (b && b.dataset.amb !== st.data.ambiente.id) st.setTrigger('ambiente', { id: b.dataset.amb });
   });
   st.el.rango.addEventListener('input', () => { st.hora = +st.el.rango.value; pintar(st); });
+  // El mapa se puede tocar en cualquier punto: se elige la hora que cae debajo del dedo o del mouse.
+  const horaDePuntero = (e) => {
+    const r = st.el.mapa.getBoundingClientRect();
+    const t = Math.max(0, Math.min(0.9999, (e.clientX - r.left) / (r.width || 1)));
+    return Math.min(23, Math.floor(t * 24));
+  };
+  st.el.mapa.addEventListener('click', (e) => {
+    const celda = e.target.closest('.celda');
+    // Con Enter o barra espaciadora no hay coordenadas: se usa la celda enfocada.
+    st.hora = e.detail === 0 && celda ? +celda.dataset.h : horaDePuntero(e);
+    st.play = false;
+    ocultarTip(st);
+    pintar(st);
+  });
+  st.el.mapa.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
+    mostrarTip(st, horaDePuntero(e));
+  });
+  st.el.mapa.addEventListener('pointerleave', () => ocultarTip(st));
+  st.el.mapa.addEventListener('focusin', (e) => {
+    const c = e.target.closest('.celda');
+    if (c) mostrarTip(st, +c.dataset.h);
+  });
+  st.el.mapa.addEventListener('focusout', () => ocultarTip(st));
   st.el.play.addEventListener('click', () => {
     st.play = !st.play;
     if (st.play && st.vista === 'kwh') st.vista = 'w';
@@ -155,6 +202,103 @@ function objetosVista(st) {
   });
 }
 
+// Del verde (consumo bajo) al rojo (consumo alto) para el mapa de las 24 horas.
+function colorCalor(t) {
+  const x = Math.max(0, Math.min(1, t));
+  return `hsl(${Math.round(145 - 145 * x)}, 72%, 46%)`;
+}
+
+// Calcula una sola vez por cambio de datos: totales horarios, picos y reparto día/noche.
+function prepararMapa(st) {
+  const arts = st.objs.filter((o) => o.tipo === 'art');
+  const base = +st.data.base_kw || 0;
+  const totales = Array.from({ length: 24 }, (_, h) =>
+    base + arts.reduce((s, o) => s + ((o.perfil && o.perfil[h]) || 0), 0));
+  const max = Math.max(...totales, 0);
+  const min = Math.min(...totales, max);
+  const spread = max - min;
+  const tops = totales.map((_, h) => {
+    let top = base > 0 ? { nombre: 'Base de la casa', w: base, icono: '🏠' } : null;
+    for (const o of arts) {
+      const w = (o.perfil && o.perfil[h]) || 0;
+      if (!top || w > top.w) top = { nombre: o.label, w, icono: o.icono || '🔌' };
+    }
+    return top && top.w > 0.0001 ? top : null;
+  });
+  const orden = totales.map((v, h) => ({ v, h })).filter((p) => p.v > 0.0001)
+    .sort((a, b) => b.v - a.v || a.h - b.h);
+  // Un "foco" es una hora que sobresale del resto; si todo consume parejo no hay picos.
+  const picos = spread > Math.max(0.001, max * 0.01) ? orden.slice(0, 3) : [];
+  const rank = new Map(picos.map((p, i) => [p.h, i + 1]));
+  const diaKwh = totales.reduce((s, v, h) => s + (esDia(h) ? v : 0), 0);
+  const nocheKwh = totales.reduce((s, v, h) => s + (esDia(h) ? 0 : v), 0);
+  const totalKwh = diaKwh + nocheKwh || 1;
+  st.analisis = { totales, tops, picos, rank, diaKwh, nocheKwh, totalKwh };
+
+  st.el.mapa.querySelectorAll('.celda').forEach((c, h) => {
+    const v = totales[h];
+    const t = spread > 0.0001 ? (v - min) / spread : 0.15;
+    const pico = rank.get(h);
+    const top = tops[h];
+    c.style.background = v > 0.0001 ? colorCalor(t) : 'transparent';
+    c.classList.toggle('pico', !!pico);
+    if (pico) c.dataset.pico = String(pico); else delete c.dataset.pico;
+    c.setAttribute('aria-label', `${hhmm(h)}–${hhmm(h + 1)}. ${fmt(v * 1000)} W` +
+      (pico ? `. Pico número ${pico}` : '') +
+      (top ? `. Consume más: ${top.nombre}, ${fmt(top.w * 1000)} W` : ''));
+  });
+
+  actualizarMetricas(st);
+  pintarPicos(st);
+}
+
+function actualizarMetricas(st) {
+  const a = st.analisis;
+  if (!a) return;
+  const tarifa = +st.data.tarifa || 0;
+  const pintar = (el, kwh, pct, nombre, desde, hasta) => {
+    const costo = tarifa > 0 ? ` · $ ${fmt(kwh * tarifa)}` : '';
+    el.querySelector('.met-v').textContent = `${fmt(kwh, kwh < 100 ? 1 : 0)} kWh`;
+    el.querySelector('.met-s').textContent = `${fmt(pct, 0)}%${costo}`;
+    el.title = `${nombre} (${hhmm(desde)}–${hhmm(hasta)}): ${fmt(kwh, 1)} kWh${costo} · ` +
+      `${fmt(pct, 0)}% del consumo diario de este ambiente`;
+  };
+  pintar(st.el.metDia, a.diaKwh, a.diaKwh / a.totalKwh * 100, 'Día', DIA_INICIO, DIA_FIN);
+  pintar(st.el.metNoche, a.nocheKwh, a.nocheKwh / a.totalKwh * 100, 'Noche', DIA_FIN, 24 + DIA_INICIO);
+}
+
+function pintarPicos(st) {
+  const picos = st.analisis ? st.analisis.picos : [];
+  st.el.picos.textContent = picos.length
+    ? `🔥 Picos: ${picos.map((p) => String(p.h).padStart(2, '0')).join(' · ')} h`
+    : '🔥 Sin picos de consumo';
+  st.el.picos.title = picos.length
+    ? picos.map((p, i) => `#${i + 1} ${hhmm(p.h)}–${hhmm(p.h + 1)}: ${fmt(p.v * 1000)} W`).join('\n')
+    : 'El consumo no cambia lo suficiente entre horas como para marcar un pico.';
+}
+
+function mostrarTip(st, h) {
+  const a = st.analisis;
+  if (!a || st.tipHora === h) return;
+  st.tipHora = h;
+  const top = a.tops[h];
+  const pico = a.rank.get(h);
+  const total = a.totales[h] || 0;
+  st.el.tip.innerHTML = `<b>${hhmm(h)}–${hhmm(h + 1)}</b>` +
+    `<span>${fmt(total * 1000)} W${pico ? ` · 🔥 pico #${pico}` : ''}</span>` +
+    `<small>${top ? `${top.icono} ${top.nombre} · ${fmt(top.w * 1000)} W` : 'Sin consumo'}</small>`;
+  const mr = st.el.mapa.getBoundingClientRect();
+  const rr = st.el.reloj.getBoundingClientRect();
+  st.el.tip.style.left = `${mr.left - rr.left + mr.width / 2}px`;
+  st.el.tip.style.top = `${mr.top - rr.top - 8}px`;
+  st.el.tip.classList.add('on');
+}
+
+function ocultarTip(st) {
+  st.tipHora = null;
+  st.el.tip.classList.remove('on');
+}
+
 // Se redibuja solo cuando cambia la selección (no en cada cuadro de la animación del día),
 // así los botones no se reemplazan mientras se hace clic.
 function pintarAccion(st) {
@@ -179,15 +323,23 @@ function pintarAccion(st) {
 
 function pintar(st) {
   const h = Math.min(23, Math.floor(st.hora));
-  const total = st.data.base_kw + st.objs.reduce((s, o) => s + (o.tipo === 'art' ? o.perfil[h] || 0 : 0), 0);
+  const total = (+st.data.base_kw || 0) + st.objs.reduce((s, o) => s + (o.tipo === 'art' ? o.perfil[h] || 0 : 0), 0);
   st.el.titulo.innerHTML = `${st.data.ambiente.icono} ${st.data.ambiente.nombre}<small>${st.data.resumen || ''}</small>`;
   st.raiz.querySelector('.ambientes').innerHTML = (st.data.ambientes || []).map((a) =>
     `<button type="button" data-amb="${a.id}" class="${a.id === st.data.ambiente.id ? 'on' : ''}">${a.icono} ${a.nombre}</button>`).join('');
   st.el.hora.textContent = hhmm(st.hora);
-  st.el.w.textContent = `${fmt(total * 1000)} W en la casa`;
+  st.el.w.textContent = `${fmt(total * 1000)} W en este ambiente`;
+  st.el.w.title = 'Suma los artefactos del ambiente visible más la base de la casa';
   st.el.play.textContent = st.play ? '⏸' : '▶';
   if (document.activeElement !== st.el.rango) st.el.rango.value = st.hora;
   st.raiz.querySelectorAll('[data-vista]').forEach((b) => b.classList.toggle('on', b.dataset.vista === st.vista));
+  // La hora actual se marca en el mapa y en la tarjeta de día o de noche.
+  if (st.horaPintada !== h) {
+    st.horaPintada = h;
+    st.el.mapa.querySelectorAll('.celda').forEach((c) => c.classList.toggle('ahora', +c.dataset.h === h));
+    st.el.metDia.classList.toggle('on', esDia(h));
+    st.el.metNoche.classList.toggle('on', !esDia(h));
+  }
   st.ctl.actualizar({ ambiente: st.data.ambiente, objetos: objetosVista(st), seleccion: st.sel, hora: st.hora });
   pintarAccion(st);
 }
@@ -222,6 +374,8 @@ export default function (component) {
   st.data = data;
   st.objs = data.objetos.map((o) => ({ ...o }));
   st.sel = data.seleccion;
-  st.accClave = null;  // datos nuevos: el panel izquierdo se vuelve a dibujar
+  st.accClave = null;   // datos nuevos: el panel izquierdo se vuelve a dibujar
+  st.horaPintada = null;  // fuerza a remarcar la hora actual en el mapa
+  prepararMapa(st);
   pintar(st);
 }
